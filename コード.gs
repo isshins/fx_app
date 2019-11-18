@@ -4,9 +4,11 @@ function scrapeExchangeToSheet() {
   if(!stopScrape(now)){
     var ex_json = exchange.callExchangeAPI();
     exchange.writeSheets(ex_json);
+    exchange.writeTrend();
   }
 }
 
+//土曜日6:50~月曜日6:59のスクレイピング停止
 function stopScrape(date){
   var stop = 0;
   var now = date;
@@ -23,8 +25,9 @@ function stopScrape(date){
   return stop;
   }
 
-//シート取得関数（クラス）
+//スクレイピングクラス
 var exchange = {
+  //シート取得関数
   getSheet: function() {
     if(this.getSheet.sheet) { return this.getSheet.sheet; }
 
@@ -50,7 +53,7 @@ var exchange = {
     return fx;
   },
 
-  //APIから取得したJSONデータをシートに書き込む
+  //APIから取得したJSONデータをシートに書き込む関数
   // Write exchange data (JSON) to the Google Sheet
   writeSheets: function(ex_json) {
     var sheet = this.getSheet();
@@ -71,5 +74,28 @@ var exchange = {
         sheet.getRange(last_row, col++).setValue(quote.open);
       }
     }
+  },
+   big_trend: function(){
+    return 0;
+  },
+  
+  small_trend: function(sheet){
+    var last_row = sheet.getLastRow();
+    var past_ask = sheet.getRange(last_row - 6,5).getValue();
+    var now_ask = sheet.getRange(last_row,5).getValue();
+    if(now_ask-past_ask>0){
+      return 1;
+    }else{
+      return 0;
+    }
+  },
+  
+  //トレンド判断
+  writeTrend: function(){
+    var sheet = this.getSheet();
+    var last_row = sheet.getLastRow();
+    sheet.getRange(last_row,8).setValue(this.big_trend());
+    sheet.getRange(last_row,9).setValue(this.small_trend(sheet));
   }
+  
 }
