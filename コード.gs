@@ -7,6 +7,9 @@ function scrapeExchangeToSheet() {
     var ex_json = exchange.callExchangeAPI();
     exchange.writeSheets(ex_json);
     exchange.writeTrend();
+    if(now.getMinutes()==0 && now.getHours()!=7){
+      updateExtreme();
+    }
   }
   //データの上限を制限
   if(sheet.getActiveSheet().getLastRow()>5000){
@@ -14,8 +17,87 @@ function scrapeExchangeToSheet() {
   }
 }
 
+function updateExtreme(){
+  var now = new Date();
+  var life_span = 11;
+  var ss  = exchange.getSheet()
+  var sheet = ss.getSheetByName('extreme_value');
+  var last_row = sheet.getLastRow();
+  var update = sheet.getRange(last_row-1,1,1,5);
+  var upd_val = update.getValues()[0];
+  var values = [0,0,0,0,0];
+  var last_extreme = getEx();//直前の極値
+  var position = getNow();//現在の買値と売値
+  
+  //寿命が先に切れた時
+  if(upd_val[1]<0){
+    values = [now,life_span,upd_val[2],position[1-upd_val[2]],0];
+    update.setValues(values);
+  }
+  //寿命切れ
+  if(upd_val[1]==0){
+    //次なる極値を追加
+    values = [now,life_span,upd_val[2],last_extreme[1-upd_val[2]],0];
+    sheet.getRange(last_row+1,1,1,5).setValues(values);
+    //極値を確定,前の極値と比較
+    var past_extreme = sheet.getRange(last_row-4,4).getValue();
+    values = [now,'done',upd_val[2],upd_val[3],upd_val[3]-past_extreme];
+    sheet.getRange(last_row-2,1,1,5).setValues(values);
+    update = sheet.getRange(last_row-1,1,1,5);
+    upd_val = update.getValues()[0];
+  }
+  
+  for(i=0; i<2; i++){
+    //最高値の更新
+    if(upd_val[2]==1){
+      if(upd_val[3]<last_extreme[0]){
+        values=[now,life_span,upd_val[2],last_extreme[0],0]
+        update.setValues(values)
+      }else{
+        sheet.getRange(last_row-1+i,2),setValue(upd_val[2]-1);//寿命経過
+      }
+    }
+    //最安値の更新
+    if(upd_val[2]==0){
+      if(upd_val[3]>last_extreme[1]){
+        values=[now,life_span,upd_val[2],last_extreme[1],0]
+        update.setValues(values)
+      }else{
+        sheet.getRange(last_row-1+i,2),setValue(upd_val[2]-1);//寿命経過
+      }
+    }
+    update = sheet.getRange(last_row,1,1,5);
+    upd_val = update.getValues()[0];
+  }
+  
+}
+//直近の最高値と最安値を取得
+function getEx(){
+  var sheet = exchange.getSheet().getActiveSheet();
+  var last_row = sheet.getLastRow();
+  Logger.log(sheet.getRange(last_row,3,1,2).getValues()[0]);
+  return sheet.getRange(last_row,3,1,2).getValues()[0];
+}
+
+function getNow(){
+  var sheet = exchange.getSheet().getActiveSheet();
+  var last_row = sheet.getLastRow();
+  Logger.log(sheet.getRange(last_row,5,1,2).getValues()[0]);
+  return sheet.getRange(last_row,5,1,2).getValues()[0];
+}
+
 function tmp(){
-  var ex_json = exchange.callExchangeAPI();
+  var now = new Date();
+  var ss  = exchange.getSheet()
+  var sheet2 = ss.getActiveSheet();
+  var sheet = ss.getSheetByName('extreme_value');
+  var last_row = sheet.getLastRow();
+  var last_row2 = sheet2.getLastRow(); 
+  var update = sheet.getRange(last_row-1,1,1,5);
+  var upd_val = [0,0,0,0,0];
+  var last_extreme = sheet2.getRange(last_row2,3,1,2);
+  var life_span = update.getValues();
+  Logger.log(update.getValues()[0][1]);
 }
 
 //土曜日6:50~月曜日6:59のスクレイピング停止
