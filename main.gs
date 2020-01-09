@@ -21,8 +21,8 @@ function scrapeExchangeToSheet() {
 
 
 function tmp(){
-  var sheet = exchange.getSheet().getActiveSheet();
-  exchange.ema(sheet);
+ // var sheet = exchange.getSheet().getActiveSheet();
+ // exchange.ema(sheet);
 }
 
 
@@ -83,8 +83,6 @@ function updateExtreme(){
 }
 
 
-
-
 //直近の最高値と最安値を取得
 function getEx(){
   var sheet = exchange.getSheet().getActiveSheet();
@@ -94,9 +92,6 @@ function getEx(){
 }
 
 
-
-
-
 //直近の買値と売値を取得
 function getNow(){
   var sheet = exchange.getSheet().getActiveSheet();
@@ -104,10 +99,6 @@ function getNow(){
   Logger.log(sheet.getRange(last_row,5,1,2).getValues()[0]);
   return sheet.getRange(last_row,5,1,2).getValues()[0];
 }
-
-
-
-
 
 
 //土曜日6:50~月曜日6:59のスクレイピング停止
