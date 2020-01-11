@@ -1,0 +1,16 @@
+//main関数
+function main() {
+  var now = new Date();
+  var sheet = exchange.getSheet();
+  //稼働時間中で5分毎にデータを書き込む
+  if(stopScrape(now)==0){
+    var ex_json = exchange.callExchangeAPI();
+    exchange.writeSheets(ex_json);//スクレイピングした値を書き込む
+    addAttribute(sheet.getActiveSheet());//特徴量を追加
+  　delOld(sheet.getActiveSheet());//データの上限を制限
+    　//極値の検出
+   // if(now.getMinutes()==0 && now.getHours()!=7){
+     // updateExtreme();
+   // }
+  } 
+}
