@@ -1,33 +1,42 @@
-//main関数
-function scrapeExchangeToSheet() {
-  var now = new Date();
-  var sheet = exchange.getSheet();
-  //稼働時間中で5分毎にデータを書き込む
-  if(stopScrape(now)==0){
-    var ex_json = exchange.callExchangeAPI();
-    exchange.writeSheets(ex_json);
-    exchange.writeTrend();
-    //極値の検出
-   // if(now.getMinutes()==0 && now.getHours()!=7){
-     // updateExtreme();
-   // }
-  }
-  //データの上限を制限
-  if(sheet.getActiveSheet().getLastRow()>5000){
-    exchange.delOld();
-  }
+//テスト関数
+function test(){
+ var sheet = exchange.getSheet().getActiveSheet();
+Logger.log(getEma(sheet));
 }
+  
+//トレンド判断の書き込み
+  function addAttribute(sheet){
+    //var sheet2 = exchange.getSheet().getSheetByName('data_1day');
+    var last_row = sheet.getLastRow();
+    sheet.getRange(last_row, 8).setValue(getEma(sheet));
+    //sheet.getRange(last_row,8).setValue(this.big_trend());
+    //sheet.getRange(last_row,9).setValue(this.small_trend(sheet));
+    //sheet.getRange(last_row,10).setValue(this.over_high(sheet));
+    //sheet.getRange(last_row,11).setValue(this.over_low(sheet));
+  }
+  
+//古いデータを消去
+  function delOld(sheet){
+    if(sheet.getLashRow()>5000){
+        sheet.deleteRow(2);
+    }
+  }
 
 
-
-function tmp(){
- // var sheet = exchange.getSheet().getActiveSheet();
- // exchange.ema(sheet);
-}
-
-
-
-
+//単純移動平均線
+  function getEma(sheet){
+    var space = 20;
+    var last_row = sheet.getLastRow();
+    var space_row = sheet.getRange(last_row-space, 5, space, 1).getValues();
+    var sum = 0;
+    for (i=0;i<space;i++){
+        sum+=space_row[i][0];
+    }
+    return sum/space;
+  }
+  
+  
+//極値の更新
 function updateExtreme(){
   var now = new Date();
   var life_span = 6;
@@ -117,4 +126,3 @@ function stopScrape(date){
   Logger.log(stop);
   return stop;
   }
-

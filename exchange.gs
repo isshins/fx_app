@@ -80,38 +80,7 @@ var exchange = {
     var past_low = sheet.getRange(last_row-1,4).getValue();
     var now_low = sheet.getRange(last_row,4).getValue();
     return now_low-past_low;
-  },
-  
-  //移動平均線
-  ema: function(sheet){
-    var space = 20;
-    var last_row = sheet.getLastRow();
-    var space_row = sheet.getRange(last_row-space, 5, space, 1).getValues();
-    var sum = 0;
-    for (i=0;1<space;i++){
-         sum+=space_row[i][0];
-    }
-    Logger.log(space_row[1][0]);
-    
-  },
-  
-  //トレンド判断の書き込み
-  writeTrend: function(){
-    var sheet = this.getSheet().getActiveSheet();
-    var sheet2 = this.getSheet().getSheetByName('data_1day');
-    var last_row = sheet.getLastRow();
-    //sheet.getRange(last_row,8).setValue(this.big_trend());
-    //sheet.getRange(last_row,9).setValue(this.small_trend(sheet));
-    //sheet.getRange(last_row,10).setValue(this.over_high(sheet));
-    //sheet.getRange(last_row,11).setValue(this.over_low(sheet));
-  },
-  
-  //古いデータを消去
-  delOld: function(){
-    var sheet = this.getSheet().getActiveSheet();
-    sheet.deleteRow(2);
-    sheet.getRange(2,10,1,2).clear();
-    sheet.getRange(2,9,6,1).clear();
   }
 }
+
 
