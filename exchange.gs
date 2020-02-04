@@ -28,9 +28,8 @@ var exchange = {
 
   //APIから取得したJSONデータをシートに書き込む関数
   // Write exchange data (JSON) to the Google Sheet
-  writeSheets: function(ex_json) {
-    var sheet = this.getSheet().getActiveSheet();
-
+  writeSheets: function(ex_json,sheet) {
+  
     // get last row to add exchange data
     var last_row = sheet.getLastRow() + 1;
 
