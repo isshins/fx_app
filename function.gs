@@ -1,104 +1,103 @@
 //テスト関数
 function test(){
-var now =new Date();
-var mysheet = exchange.getSheet().getSheetByName('data_1minuits');
-   var data = getCandle('GBP',5);
-   mysheet = getSheets().getSheetByName('GBP_5m');
-   mysheet.appendRow(data);
+    var now =new Date();
+    var mysheet = exchange.getSheet().getSheetByName('data_1m');
+    dataDivide('GBP');
 }
 
 //アップロード関数
 function update(mySheet){
-  var pairs = ["GBPJPY", "USDJPY", "EURJPY"];
-  var prices = [0, 0, 0];
+    var pairs = ["GBPJPY", "USDJPY", "EURJPY"];
+    var prices = [new Date()];
+    var last_row = mySheet.getLastRow();
 
-  for(var i=0; i<3; i++){
-    prices[i] = getDeta(pairs[i]);
-  }
-
-  var values = mySheet.getRange("A2:D2000").getValues();
-
-  for(var i=0; i<values.length; i++){
-    if(values[i][0]==''){
-      mySheet.getRange(i+2, 1).setValue(new Date());
-      for(var j=1; j<4; j++){
-        mySheet.getRange(i+2, j+1).setValue(prices[j-1]);
-      }
-      break;
-    }else{
-      for(var j=0; j<4; j++){
-        mySheet.getRange(i+2, j+1).setValue(values[i][j]);
-      }
+    for(var i=0; i<3; i++){
+        prices.push(getData(pairs[i]));
     }
-  }
+    mySheet.appendRow(prices);
 }
 
 //取得する関数
-function getDeta(pair) {
-  var url = 'https://info.finance.yahoo.co.jp/fx/detail/?code=' +pair+ '=FX';
-  var tag = pair + '_detail_bid">';
+function getData(pair) {
+    var url = 'https://info.finance.yahoo.co.jp/fx/detail/?code=' +pair+ '=FX';
+    var tag = pair + '_detail_bid">';
 
-  var response = UrlFetchApp.fetch(url);  
-  var html = response.getContentText();
-  var index = html.indexOf(tag);
-  price = "";
-  if (index !== -1) {
-    var html = html.substring(index + tag.length);
-    var index = html.indexOf('</dd>');
+    var response = UrlFetchApp.fetch(url);  
+    var html = response.getContentText();
+    var index = html.indexOf(tag);
+    price = "";
     if (index !== -1) {
-       html = html.substring(0, index);
-       html = html.replace('<span class="large">',"")
-       price = html.replace('</span>',"")
+        var html = html.substring(index + tag.length);
+        var index = html.indexOf('</dd>');
+        if (index !== -1) {
+            html = html.substring(0, index);
+            html = html.replace('<span class="large">',"")
+            price = html.replace('</span>',"")
+        }
     }
-  }
-  return price;
+    return price;
 }
 
 
- //1分足の元データからそれぞれの時間足のシート作成
-function dataDavide(pair){
-var now = new Date();
-var data = [];
-  if(now.getMinutes()%5==0){
-  //5分足のローソク足
-  var mysheet = getSheet().getSheetByName(pair+'_5m');
-  mysheet.appendRow(getCandle(pair,5));
-  }
-  if(now.getMinutes()%30==0){
-  //30分足のローソク足
-  mysheet = getSheet().getSheetByName(pair+'_30m');
-  mysheet.appendRow(getCandle(pair,30));
-  }
-  if(now.getHours()%4==0 && getMiutes()==0){
-  //４時間足
-  mysheet = getSheet().getSheetByName(pair+'_4h')
-  mysheet.appendRow(getCandle(pair,240));
-  }
-  if(now.getHours()==0 && now.getMinutes()==0){
-  //日足
-  mysheet = getSheet().getSheetByName(pair+'_1d');
-  mysheet.appendRow(getCandle(pair,1440));
-  }
+//1分足の元データからそれぞれの時間足のシート作成
+function dataDivide(pair){
+    var now = new Date();
+    var data = [];
+    if(now.getMinutes()%5==0){
+        //5分足のローソク足
+        var mysheet = getSheets().getSheetByName(pair+'_5m');
+        data = addFeature(mysheet,getCandle(pair,5));
+        mysheet.appendRow(data);
+        delOld(mysheet,5000);
+    }
+    if(now.getMinutes()%30==0){
+        //30分足のローソク足
+        mysheet = getSheets().getSheetByName(pair+'_30m');
+        data = addFeature(mysheet,getCandle(pair,30));
+        mysheet.appendRow(data);
+        delOld(mysheet,5000);
+    }
+    if(now.getHours()%4==0 && now.getMinutes()==0){
+        //４時間足
+        mysheet = getSheets().getSheetByName(pair+'_4h')
+        data = addFeature(mysheet,getCandle(pair,240));
+        mysheet.appendRow(data);
+        delOld(mysheet,5000);
+    }
+    if(now.getHours()==0 && now.getMinutes()==0){
+        //日足
+        mysheet = getSheets().getSheetByName(pair+'_1d');
+        data = addFeature(mysheet,getCandle(pair,1440));
+        mysheet.appendRow(data);
+        delOld(mysheet,5000);
+    }
 }
 
 //与えられた期間でのopen,end,high,lowを取得
 function getCandle(pair,data_num){
-var pairs = ["GBP","USD","EUR"];
-var mysheet = getSheets().getSheetByName('data_1m');
-var array = [];
-var now = new Date();
-var last_row = mysheet.getLastRow();
-var pair_n = pairs.indexOf(pair);
-var data = mysheet.getRange(last_row-data_num+1, pair_n+2,data_num,1).getValues();
-Logger.log(data);
-for(i=0; i<data_num; i++){
-  array.push(data[i][0]);
-}
-Logger.log(array);
-return [now,array[0], array[data_num-1], 
-Math.max.apply(null,array),Math.min.apply(null,array)];
+    var pairs = ["GBP","USD","EUR"];
+    var mysheet = getSheets().getSheetByName('data_1m');
+    var array = [];
+    var now = new Date();
+    var last_row = mysheet.getLastRow();
+    var pair_n = pairs.indexOf(pair);
+    var data = mysheet.getRange(last_row-data_num+1, pair_n+2,data_num,1).getValues();
+    Logger.log(data);
+    for(i=0; i<data_num; i++){
+        array.push(data[i][0]);
+    }
+    Logger.log(array);
+    return [now,Math.max.apply(null,array),Math.min.apply(null,array), array[0], array[data_num-1]];
 }
 
+//特徴量を加える
+function addFeature(mysheet,data){
+    data.push(getBB(mysheet,0));
+    data.push(getBB(mysheet,1));
+    data.push(getBB(mysheet,-1));
+    data.push(getBB(mysheet,2));
+    return data;
+}
 
 //トレンド判断の書き込み
 function addAttribute(sheet){
@@ -111,48 +110,52 @@ function addAttribute(sheet){
 }
 
 //古いデータを消去
-function delOld(sheet){
-    if(sheet.getLastRow()>5000){
+function delOld(sheet,limit){
+    if(sheet.getLastRow()>limit){
         sheet.deleteRow(2);
     }
 }
 
 
 //単純移動平均線とボリンジャーバンド
-function getBB(sheet,height){
+function getBB(sheet,mode){
     var space = 20;
     var v_rate = 3 
     var last_row = sheet.getLastRow();
-    var space_row = sheet.getRange(last_row-(space-1), 5, space, 1).getValues();
     var sum = 0;
     var variance = 0;
+    var ema = 0;
 
-    for (i=0;i<space;i++){  //heightが0の時には単純移動平均線を出力
-        sum+=space_row[i][0];
-    }
-
-    var ema=sum/space;
-
-    if(height>0){                       //heigetが1以上の時には上のボリンジャーバンドを出力
-        for(i=0; i<space; i++){
-            variance+=Math.pow(ema-space_row[i][0],2);
+    if(last_row>21){
+    var space_row = sheet.getRange(last_row-(space-1), 5, space, 1).getValues();
+    
+        for(i=0;i<space;i++){                            //modeが0の時には単純移動平均線を出力
+            sum+=space_row[i][0];
         }
-        variance=variance/(space-1);
-        var std=Math.sqrt(variance);
-        if(height==2){                  //heightが2の時にはボリンジャーバンドの際を100%、EMAを0％とした時の現在の終値の割合を出力
-            return ((space_row[space-1][0]-ema)/(v_rate*std))*100;  
-        }
-        return ema+v_rate*std;
+        ema=sum/space;
 
-    }
 
-    if(height<0){                        //heigetが-1以下の時には下のボリンジャーバンドを出力
-        for(i=0; i<space; i++){
-            variance+=Math.pow(ema-space_row[i][0],2);
+        if(mode>0){                                      //modeが1以上の時には上のボリンジャーバンドを出力
+            for(i=0; i<space; i++){
+                variance+=Math.pow(ema-space_row[i][0],2);
+            }
+            variance=variance/(space-1);
+            var std=Math.sqrt(variance);
+            if(mode==2){                                 //modeが2の時にはボリンジャーバンドの際を100%、EMAを0％とした時の現在の終値の割合を出力
+                return ((space_row[space-1][0]-ema)/(v_rate*std))*100;  
+            }
+            return ema+v_rate*std;
+
         }
-        variance=variance/(space-1);
-        var std=Math.sqrt(variance);
-        return ema-v_rate*std;
+
+        if(mode<0){                                      //modeが-1以下の時には下のボリンジャーバンドを出力
+            for(i=0; i<space; i++){
+                variance+=Math.pow(ema-space_row[i][0],2);
+            }
+            variance=variance/(space-1);
+            var std=Math.sqrt(variance);
+            return ema-v_rate*std;
+        }
     }
     return ema;
 }
@@ -251,11 +254,11 @@ function stopScrape(date){
 
 //シートを与える関数
 function getSheets(){
-var SHEET_URL = PropertiesService.getScriptProperties().getProperty('SHEET_URL');
-   if (!SHEET_URL) {
-      throw 'You should set "SHEET_URL" property from [File] > [Project properties] > [Script properties]';
-      }
-var sheets = SpreadsheetApp.openByUrl(SHEET_URL);
-return sheets;
+    var SHEET_URL = PropertiesService.getScriptProperties().getProperty('SHEET_URL');
+    if (!SHEET_URL) {
+        throw 'You should set "SHEET_URL" property from [File] > [Project properties] > [Script properties]';
+    }
+    var sheets = SpreadsheetApp.openByUrl(SHEET_URL);
+    return sheets;
 }
 
