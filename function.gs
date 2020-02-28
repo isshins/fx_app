@@ -1,8 +1,7 @@
 //テスト関数
 function test(){
     var now =new Date();
-    var mysheet = exchange.getSheet().getSheetByName('data_1m');
-    dataDivide('GBP');
+    var mysheet = getSheets().getSheetByName('data_1m');
 }
 
 //アップロード関数
@@ -160,7 +159,7 @@ function getBB(sheet,mode){
     return ema;
 }
 
-
+/*
 //極値の更新
 function updateExtreme(){
     var now = new Date();
@@ -215,8 +214,9 @@ function updateExtreme(){
     }
 
 }
+*/
 
-
+/*
 //直近の最高値と最安値を取得
 function getEx(){
     var sheet = exchange.getSheet().getActiveSheet();
@@ -234,7 +234,7 @@ function getNow(){
     Logger.log(now_trade);
     return now_trade;
 }
-
+*/
 //土曜日6:50~月曜日6:59のスクレイピング停止
 function stopScrape(date){
     var stop = 0;
