@@ -1,7 +1,9 @@
 //テスト関数
 function test(){
-    var now =new Date();
+    var now =Date.now();
     var mysheet = getSheets().getSheetByName('data_1m');
+    date = getCandle('GBP',1440);
+    Logger.log(date);
 }
 
 //アップロード関数
@@ -72,21 +74,20 @@ function dataDivide(pair){
     }
 }
 
-//与えられた期間でのopen,end,high,lowを取得
+//与えられた期間での時間,open,end,high,lowを取得
 function getCandle(pair,data_num){
     var pairs = ["GBP","USD","EUR"];
     var mysheet = getSheets().getSheetByName('data_1m');
     var array = [];
-    var now = new Date();
+    var now = Date.now();
     var last_row = mysheet.getLastRow();
     var pair_n = pairs.indexOf(pair);
     var data = mysheet.getRange(last_row-data_num+1, pair_n+2,data_num,1).getValues();
-    Logger.log(data);
+    var past = new Date(now-60000*data_num)
     for(i=0; i<data_num; i++){
         array.push(data[i][0]);
     }
-    Logger.log(array);
-    return [now,Math.max.apply(null,array),Math.min.apply(null,array), array[0], array[data_num-1]];
+    return [past,Math.max.apply(null,array),Math.min.apply(null,array), array[0], array[data_num-1]];
 }
 
 //特徴量を加える
