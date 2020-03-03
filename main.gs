@@ -2,9 +2,10 @@
 function main_data(){
     var sheets = getSheets();
     var now = new Date();
+    var data = sheets.getSheetByName('data_1m');
     if(stopScrape(now)==0){
-        update(sheets.getSheetByName('data_1m'));
-        delOld(sheets.getSheetByName('data_1m'),2000);
+        update(data);
+        delOld(data,2000);
         dataDivide('GBP');
     }   
 }

@@ -1,9 +1,9 @@
 //テスト関数
 function test(){
     var now =Date.now();
-    var mysheet = getSheets().getSheetByName('data_1m');
-    date = getCandle('GBP',1440);
-    Logger.log(date);
+    var mysheet = getSheets().getSheetByName('test');
+    var last_row = mysheet.getLastRow();
+    dataDivide('GBP');
 }
 
 //アップロード関数
@@ -11,9 +11,19 @@ function update(mySheet){
     var pairs = ["GBPJPY", "USDJPY", "EURJPY"];
     var prices = [new Date()];
     var last_row = mySheet.getLastRow();
-
+    var miss = 0;
+    var data = ''
     for(var i=0; i<3; i++){
-        prices.push(getData(pairs[i]));
+        data = getData(pairs[i]);
+        if(data=='.'){
+            prices.push(mySheet.getRange(last_row,i+2).getValue());
+            miss = 1;
+        }else{
+            prices.push(data);
+        }
+    }
+    if(miss==1){
+    prices.push('miss');
     }
     mySheet.appendRow(prices);
 }
@@ -48,6 +58,7 @@ function dataDivide(pair){
         //5分足のローソク足
         var mysheet = getSheets().getSheetByName(pair+'_5m');
         data = addFeature(mysheet,getCandle(pair,5));
+        Logger.log(data);
         mysheet.appendRow(data);
         delOld(mysheet,5000);
     }
@@ -80,12 +91,17 @@ function getCandle(pair,data_num){
     var mysheet = getSheets().getSheetByName('data_1m');
     var array = [];
     var now = Date.now();
+    var past = new Date(now-60000*data_num);
     var last_row = mysheet.getLastRow();
     var pair_n = pairs.indexOf(pair);
-    var data = mysheet.getRange(last_row-data_num+1, pair_n+2,data_num,1).getValues();
-    var past = new Date(now-60000*data_num)
-    for(i=0; i<data_num; i++){
+    var data = mysheet.getRange(last_row-data_num, pair_n+2,data_num+1,1).getValues();
+    for(i=1; i<data_num+1; i++){
+        Logger.log(data[i][0]);
+        if(data[i][0] == '.'){
+        array.push(data[i-1][0]);
+        }else{
         array.push(data[i][0]);
+        }
     }
     return [past,Math.max.apply(null,array),Math.min.apply(null,array), array[0], array[data_num-1]];
 }
@@ -99,6 +115,7 @@ function addFeature(mysheet,data){
     return data;
 }
 
+/*
 //トレンド判断の書き込み
 function addAttribute(sheet){
     //var sheet2 = exchange.getSheet().getSheetByName('data_1day');
@@ -108,6 +125,7 @@ function addAttribute(sheet){
     sheet.getRange(last_row,10).setValue(getBB(sheet,-1));
     sheet.getRange(last_row,11).setValue(getBB(sheet,2));
 }
+*/
 
 //古いデータを消去
 function delOld(sheet,limit){
@@ -134,7 +152,6 @@ function getBB(sheet,mode){
         }
         ema=sum/space;
 
-
         if(mode>0){                                      //modeが1以上の時には上のボリンジャーバンドを出力
             for(i=0; i<space; i++){
                 variance+=Math.pow(ema-space_row[i][0],2);
@@ -145,7 +162,6 @@ function getBB(sheet,mode){
                 return ((space_row[space-1][0]-ema)/(v_rate*std))*100;  
             }
             return ema+v_rate*std;
-
         }
 
         if(mode<0){                                      //modeが-1以下の時には下のボリンジャーバンドを出力
