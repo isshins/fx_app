@@ -1,9 +1,10 @@
 //テスト関数
 function test(){
     var now =Date.now();
-    var mysheet = getSheets().getSheetByName('test');
+    var mysheet = getSheets().getSheetByName('data_1m');
     var last_row = mysheet.getLastRow();
-    dataDivide('GBP');
+dataDivide('GBP')
+
 }
 
 //アップロード関数
@@ -28,7 +29,7 @@ function update(mySheet){
     mySheet.appendRow(prices);
 }
 
-//取得する関数
+//為替データを取得する関数
 function getData(pair) {
     var url = 'https://info.finance.yahoo.co.jp/fx/detail/?code=' +pair+ '=FX';
     var tag = pair + '_detail_bid">';
@@ -57,30 +58,54 @@ function dataDivide(pair){
     if(now.getMinutes()%5==0){
         //5分足のローソク足
         var mysheet = getSheets().getSheetByName(pair+'_5m');
+        var bb = new BB(mysheet);
         data = addFeature(mysheet,getCandle(pair,5));
         Logger.log(data);
         mysheet.appendRow(data);
+        if(bb.percent>=85){
+            notice('5分足で売りのチャンス！！');
+        }if(bb.percent<=-85){
+            notice('5分足で買いのチャンス！！');
+        }
         delOld(mysheet,5000);
     }
     if(now.getMinutes()%30==0){
         //30分足のローソク足
         mysheet = getSheets().getSheetByName(pair+'_30m');
+        bb = new BB(mysheet);
         data = addFeature(mysheet,getCandle(pair,30));
         mysheet.appendRow(data);
+        if(bb.percent>=60){
+            notice('30分足で売りのチャンス！！');
+        }if(bb.percent<=-60){
+            notice('30分足で買いのチャンス！！');
+        }
         delOld(mysheet,5000);
     }
     if(now.getHours()%4==0 && now.getMinutes()==0){
         //４時間足
-        mysheet = getSheets().getSheetByName(pair+'_4h')
+        mysheet = getSheets().getSheetByName(pair+'_4h');
+        bb = new BB(mysheet);
         data = addFeature(mysheet,getCandle(pair,240));
         mysheet.appendRow(data);
+        if(bb.percent>=60){
+            notice('４時間足で売りのチャンス！！');
+        }if(bb.percent<=-60){
+            notice('4時間足で買いのチャンス！！');
+        }
         delOld(mysheet,5000);
     }
     if(now.getHours()==0 && now.getMinutes()==0){
         //日足
         mysheet = getSheets().getSheetByName(pair+'_1d');
+        bb = new BB(mysheet);
         data = addFeature(mysheet,getCandle(pair,1440));
         mysheet.appendRow(data);
+        if(bb.percent>=60){
+            notice('日足で売りのチャンス！！');
+        }if(bb.percent<=-60){
+            notice('日足で買いのチャンス！！');
+        }
         delOld(mysheet,5000);
     }
 }
@@ -106,12 +131,13 @@ function getCandle(pair,data_num){
     return [past,Math.max.apply(null,array),Math.min.apply(null,array), array[0], array[data_num-1]];
 }
 
-//特徴量を加える
+//特徴量を加える　&　ボリンジャーバンドの割合が60%を超えた時に通知する
 function addFeature(mysheet,data){
-    data.push(getBB(mysheet,0));
-    data.push(getBB(mysheet,1));
-    data.push(getBB(mysheet,-1));
-    data.push(getBB(mysheet,2));
+    var bb = new BB(mysheet);
+    data.push(bb.MA);
+    data.push(bb.Up);
+    data.push(bb.Down);
+    data.push(bb.percent);
     return data;
 }
 
@@ -129,12 +155,14 @@ function addAttribute(sheet){
 
 //古いデータを消去
 function delOld(sheet,limit){
-    if(sheet.getLastRow()>limit){
-        sheet.deleteRow(2);
+    var diff = sheet.getLastRow()-limit;
+    Logger.log(diff);
+    if(diff>0){
+        sheet.deleteRows(2,diff);
     }
 }
 
-
+/*
 //単純移動平均線とボリンジャーバンド
 function getBB(sheet,mode){
     var space = 20;
@@ -175,6 +203,7 @@ function getBB(sheet,mode){
     }
     return ema;
 }
+*/
 
 /*
 //極値の更新

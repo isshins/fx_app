@@ -1,10 +1,11 @@
-//個人情報、ID
-var CHANNEL_ACCESS_TOKEN = PropertiesService.getScriptProperties().getProperty('CHANNEL_ACCESS_TOKEN');
-var USER_ID = PropertiesService.getScriptProperties().getProperty('USER_ID');
+
 
 
 //LINEに通知を送る関数
-function sendInfo(info='今がチャンス'){
+function notice(info='今がチャンス'){
+var CHANNEL_ACCESS_TOKEN = PropertiesService.getScriptProperties().getProperty('CHANNEL_ACCESS_TOKEN');
+var USER_ID = PropertiesService.getScriptProperties().getProperty('USER_ID');
+  
   var postData = {
       'to':USER_ID,
       'messages':[{
