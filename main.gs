@@ -7,6 +7,7 @@ function main_data(){
         update(data);
         delOld(data,2000);
         dataDivide('GBP');
+        noticeBB('GBP');
     }   
 }
 
