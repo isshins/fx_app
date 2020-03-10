@@ -79,7 +79,7 @@ function dataDivide(pair){
     if(now.getHours()%4==0 && now.getMinutes()==0){
         //４時間足
         mysheet = getSheets().getSheetByName(pair+'_4h');
-        bb = new BB(mysheet);z
+        bb = new BB(mysheet);
         data = addFeature(mysheet,getCandle(pair,240));
         mysheet.appendRow(data);
         delOld(mysheet,5000);
@@ -122,62 +122,6 @@ function addFeature(mysheet,data){
     data.push(bb.Up);
     data.push(bb.Down);
     return data;
-}
-
-//各足でボリンジャーバンドに触れた時に通知する
-function noticeBB(pair){
-    var mysheet = getSheets().getSheetByName('data_1m');
-    var pairs = ["GBP","USD","EUR"];
-    var last_row = mysheet.getLastRow(); 
-    var pair_n = pairs.indexOf(pair);
-    var now_trade = mysheet.getRange(last_row, pair_n+2).getValue();
-    var past_trade = mysheet.getRange(last_row-1, pair_n+2).getValue();
-    var percent = 0;
-    var past_percent = 0;
-
-    mysheet = getSheets().getSheetByName(pair+'_30m');
-    var bb = new BB(mysheet);
-    past_percent = (past_trade-bb.MA)/(bb.Up-bb.MA)
-    percent = (now_trade-bb.MA)/(bb.Up-bb.MA)
-    past_percent *= 100;
-    percent *= 100;
-    Logger.log(past_percent);
-    Logger.log(percent);
-    if(past_percent<80 && percent>=80){
-        notice('30分足ボリンジャーバンドで売りのチャンス！！');
-    }if(past_percent>-80 && percent<=-80){
-        notice('30分足ボリンジャーバンドで買いのチャンス！！');
-    }
-
-    mysheet = getSheets().getSheetByName(pair+'_4h');
-    var bb = new BB(mysheet);
-    past_percent = (past_trade-bb.MA)/(bb.Up-bb.MA)
-    percent = (now_trade-bb.MA)/(bb.Up-bb.MA)
-    past_percent *= 100;
-    percent *= 100;
-    Logger.log(past_percent);
-    Logger.log(percent);
-    if(past_percent<80 && percent>=80){
-        notice('4時間足ボリンジャーバンドで売りのチャンス！！');
-    }if(past_percent>-80 && percent<=-80){
-        notice('4時間足ボリンジャーバンドで買いのチャンス！！');
-    }
-
-    /*
-    mysheet = getSheets().getSheetByName(pair+'_1d');
-    var bb = new BB(mysheet);
-    past_percent = (past_trade-bb.MA)/(bb.Up-bb.MA)
-    percent = (now_trade-bb.MA)/(bb.Up-bb.MA)
-    past_percent *= 100;
-    percent *= 100;
-    Logger.log(past_percent);
-    Logger.log(percent);
-    if(past_percent<85 && percent>=85){
-        notice('日足ボリンジャーバンドで売りのチャンス！！');
-    }if(past_percent>-85 && percent<=-85){
-        notice('日足ボリンジャーバンドで買いのチャンス！！');
-    }
-    */
 }
 
 
