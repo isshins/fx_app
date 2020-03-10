@@ -1,5 +1,4 @@
 (function(global){
-
 var BB = function(sheet){
         var sum = 0;
         var ema = 0;

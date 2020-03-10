@@ -1,9 +1,11 @@
 //テスト関数
 function test(){
     var now =Date.now();
-    var mysheet = getSheets().getSheetByName('data_1m');
+    var pair = 'GBP'
+    var mysheet = getSheets().getSheetByName(pair+'_30m');
     var last_row = mysheet.getLastRow();
-noticeBB('GBP')
+noticeRSI(pair);
+
 
 }
 
@@ -121,22 +123,37 @@ function addFeature(mysheet,data){
     data.push(bb.MA);
     data.push(bb.Up);
     data.push(bb.Down);
+    data.push(addRSI(mysheet));
     return data;
 }
 
 
-
-/*
-//トレンド判断の書き込み
-function addAttribute(sheet){
-    //var sheet2 = exchange.getSheet().getSheetByName('data_1day');
+function addRSI(sheet){
+    const period = 14;
     var last_row = sheet.getLastRow();
-    sheet.getRange(last_row, 8).setValue(getBB(sheet,0));
-    sheet.getRange(last_row,9).setValue(getBB(sheet,1));
-    sheet.getRange(last_row,10).setValue(getBB(sheet,-1));
-    sheet.getRange(last_row,11).setValue(getBB(sheet,2));
+    var diff = 0;
+    var plus_diff = 0;
+    //14日分のデータが貯まるまで返値を0にする
+    if(last_row>period+1){
+        var period_row = sheet.getRange(last_row-period, 5, period+1, 1).getValues()
+     }else{
+        var period_row = [];
+        for(i=0;i<period+1;i++){
+            period_row.push([0]);
+        } 
+    }
+    
+    for(i=0;i<period;i++){
+        diff += Math.abs(period_row[i+1][0]-period_row[i][0]);
+        Logger.log(i);
+        if(period_row[i+1][0]-period_row[i][0]>0){
+            plus_diff += period_row[i+1][0]-period_row[i][0];
+        }
+    }
+    diff /= period;
+    plus_diff /= period;
+    return plus_diff/diff*100;
 }
-*/
 
 //古いデータを消去
 function delOld(sheet,limit){

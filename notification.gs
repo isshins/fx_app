@@ -1,3 +1,10 @@
+//通知関数まとめ
+function noticeAny(pair){
+    noticeBB(pair);
+    noticeSharp(pair);
+    noticeRSI(pair);
+}
+
 //LINEに通知を送る関数
 function notice(info='今がチャンス'){
 var CHANNEL_ACCESS_TOKEN = PropertiesService.getScriptProperties().getProperty('CHANNEL_ACCESS_TOKEN');
@@ -79,6 +86,7 @@ function noticeBB(pair){
     */
 }
 
+//急激な変化(50pips)が生じた際に通知
 function noticeSharp(pair){
     var mysheet = getSheets().getSheetByName('data_1m');
     var pairs = ["GBP","USD","EUR"];
@@ -90,5 +98,19 @@ function noticeSharp(pair){
         notice(pair+'が急下落');
     }if(past_trade-now_trade<=-0.5){
         notice(pair+'が急上昇');
+    }
+}
+
+//RSIで上下30%に触れた時に通知
+function noticeRSI(pair){
+    var mysheet = getSheets().getSheetByName(pair+'_30m');
+    var last_row = mysheet.getLastRow(); 
+    var now_RSI = mysheet.getRange(last_row, 9).getValue();
+    var past_RSI = mysheet.getRange(last_row-1, 9).getValue();
+    
+    if(now_RSI>=70 && past_RSI<70){
+        notice('RSIで売りのチャンス');
+    }if(now_RSI<=30 && past_RSI>30){
+        notice('RSIで買いのチャンス');
     }
 }
