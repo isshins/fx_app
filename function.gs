@@ -63,11 +63,6 @@ function dataDivide(pair){
         var bb = new BB(mysheet);
         data = addFeature(mysheet,getCandle(pair,5));
         mysheet.appendRow(data);
-        if(bb.percent>=85){
-            notice('5分足ボリンジャーバンドで売りのチャンス！！');
-        }if(bb.percent<=-85){
-            notice('5分足ボリンジャーバンドで買いのチャンス！！');
-        }
         delOld(mysheet,5000);
     }
     if(now.getMinutes()%30==0){
@@ -76,6 +71,7 @@ function dataDivide(pair){
         bb = new BB(mysheet);
         data = addFeature(mysheet,getCandle(pair,30));
         mysheet.appendRow(data);
+        noticeRSI(pair);//RSI通知
         delOld(mysheet,5000);
     }
     if(now.getHours()%4==0 && now.getMinutes()==0){
@@ -129,11 +125,11 @@ function addFeature(mysheet,data){
 
 
 function addRSI(sheet){
-    const period = 14;
+    const period = 13;
     var last_row = sheet.getLastRow();
     var diff = 0;
     var plus_diff = 0;
-    //14日分のデータが貯まるまで返値を0にする
+    //13日分のデータが貯まるまで返値を0にする
     if(last_row>period+1){
         var period_row = sheet.getRange(last_row-period, 5, period+1, 1).getValues()
      }else{
@@ -290,9 +286,9 @@ function stopScrape(date){
     if(now.getDay()==6 && now.getHours()>=6){
         stop = 1;
     }
-    if(now.getDay()==6 && now.getHours()==6 && now.getMinutes()<50){
-        stop = 0;
-    } 
+    //if(now.getDay()==6 && now.getHours()==6 && now.getMinutes()<50){
+   //     stop = 0;
+  //  } 
     if(now.getDay()==0 || now.getDay()==1 && now.getHours()<=6){
         stop = 1;
     }

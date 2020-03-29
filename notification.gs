@@ -2,7 +2,7 @@
 function noticeAny(pair){
     noticeBB(pair);
     noticeSharp(pair);
-    noticeRSI(pair);
+    
 }
 
 //LINEに通知を送る関数
@@ -56,7 +56,7 @@ function noticeBB(pair){
     }if(past_percent>-66 && percent<=-66){
         notice('30分足ボリンジャーバンドで買いのチャンス！！');
     }
-
+/*
     mysheet = getSheets().getSheetByName(pair+'_4h');
     var bb = new BB(mysheet);
     past_percent = (past_trade-bb.MA)/(bb.Up-bb.MA)
@@ -68,7 +68,7 @@ function noticeBB(pair){
     }if(past_percent>-66 && percent<=-66){
         notice('4時間足ボリンジャーバンドで買いのチャンス！！');
     }
-
+*/
     /*
     mysheet = getSheets().getSheetByName(pair+'_1d');
     var bb = new BB(mysheet);
@@ -96,7 +96,7 @@ function noticeSharp(pair){
     var past_trade = mysheet.getRange(last_row-1, pair_n+2).getValue();
     if(past_trade-now_trade>=0.5){
         notice(pair+'が急下落');
-    }if(past_trade-now_trade<=-0.5){
+    }if(now_trade-past_trade>=0.5){
         notice(pair+'が急上昇');
     }
 }
@@ -113,4 +113,19 @@ function noticeRSI(pair){
     }if(now_RSI<=30 && past_RSI>30){
         notice('RSIで買いのチャンス');
     }
+}
+
+//イベントの振り分け
+function doPost(e) {
+  var events = JSON.parse(e.postData.contents).events;
+  events.forEach(function(event) {
+    if(event.type == "message") {
+      var UserId = event.source.userId;
+      var UserMessage = event.message.text;
+      if ('通知' == UserMessage){
+        notice();
+      }
+   }
+  });
+  
 }
