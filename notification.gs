@@ -2,7 +2,7 @@
 function noticeAny(pair){
     noticeBB(pair);
     noticeSharp(pair);
-    
+    noticeOrder()
 }
 
 //LINEに通知を送る関数
@@ -115,8 +115,36 @@ function noticeRSI(pair){
     }
 }
 
-//LINEに記録したラインに触れた時に通知する
-
+//LINEに記録した損切、利確ポイントに触れた時に通知する
+function noticeOrder(){
+    var sheet1 = getSheets().getSheetByName('data_1m');
+    var sheet2 = getSheets().getSheetByName('本番帳簿');
+    var last_row = sheet1.getLastRow();
+    var now_trade = sheet1.getRange(last_row,2).getValue();
+    last_row = sheet2.getLastRow();
+    var stop_order = sheet2.getRange(last_row,5).getValue();
+    var limit_order = sheet2.getRange(last_row,6).getValue()
+    if(sheet2.getRange(last_row,2).getValue() != 'completed'){
+        if(sheet2.getRange(last_row,3).getValue() == '買い'){
+            if(stop_order>=now_trade){
+                notice('損切ポイントを超えました');
+                sheet2.getRange(last_row,7).setValue(stop_order);
+            }else if(limit_order<=now_trade){
+                notice('利得ポイントに到達しました');
+                sheet2.getRange(last_row,7).setValue(limit_order);
+            }
+        }else if(sheet2.getRange(last_row,3).getValue() == '売り'){
+            if(stop_order<=now_trade){
+                notice('損切ポイントを超えました');
+                sheet2.getRange(last_row,7).setValue(stop_order);
+            }else if(limit_order>=now_trade){
+                notice('利得ポイントに到達しました');
+                sheet2.getRange(last_row,7).setValue(limit_order);
+            }
+        }
+        takeProfit();
+    }
+}
 
 //LINEに投稿された文字列に反応する関数
 function doPost(e) {
@@ -136,29 +164,29 @@ function doPost(e) {
       sheet.getRange(1,1).setValue(post_text);
   }else if('buy order' == post_text){
       var now = new Date();
-      sheet.appendRow([now,'買い',stock]);
+      sheet.appendRow([now,null,'買い',stock]);
       notice('買い注文記録完了');
   }else if('sell order' == post_text){
       var now = new Date();
-      sheet.appendRow([now,'売り',stock]);
+      sheet.appendRow([now,null,'売り',stock]);
       notice('売り注文記録完了');
   }else if('stop order' == post_text){
-      var tradetype = sheet.getRange(last_row,2).getValue();
-      var order = sheet.getRange(last_row,3).getValue();
+      var tradetype = sheet.getRange(last_row,3).getValue();
+      var order = sheet.getRange(last_row,4).getValue();
       if((tradetype == '買い' && order > stock) 
       || (tradetype == '売り' && order < stock)){
-          sheet.getRange(last_row,4).setValue(stock);
+          sheet.getRange(last_row,5).setValue(stock);
           notice('損切記録完了');
       }else{
           notice('損切位置がおかしいです');
           return;
       }
   }else if('limit order' == post_text){
-      var tradetype = sheet.getRange(last_row,2).getValue();
-      var order = sheet.getRange(last_row,3).getValue();
+      var tradetype = sheet.getRange(last_row,3).getValue();
+      var order = sheet.getRange(last_row,4).getValue();
       if((tradetype == '買い' && order < stock) 
       || (tradetype == '売り' && order > stock)){
-          sheet.getRange(last_row,5).setValue(stock);
+          sheet.getRange(last_row,6).setValue(stock);
           notice('利確記録完了');
       }else{
           notice('利得位置がおかしいです');
@@ -256,44 +284,13 @@ function choiceAction() {
 	});
 }
 
-
-/*日時を選択する関数
-function choiceDate() {
-	//スクリプトプロパティのオブジェクトを取得
-	const CHANNEL_ACCESS_TOKEN = PropertiesService.getScriptProperties().getProperty('CHANNEL_ACCESS_TOKEN');
-    const USER_ID = PropertiesService.getScriptProperties().getProperty('USER_ID');
-	// ボタンテンプレートメッセージを送る(datetime_picker)
-	UrlFetchApp.fetch('https://api.line.me/v2/bot/message/push', {
-		'headers': {
-			'Content-Type': 'application/json',
-			'Authorization': 'Bearer ' + CHANNEL_ACCESS_TOKEN, // スクリプトプロパティにトークンは事前に追加しておく
-		},
-		'method': 'POST',
-		'payload': JSON.stringify({
-			"to": USER_ID, // スクリプトプロパティに送信先IDは事前に追加しておく
-			"messages": [
-				{
-					"type": "template",
-					"altText": "datetime_picker",
-					"template": {
-						"type": "buttons",
-						"title": "メニュー",
-						"text": "以下より選択してください。",
-						"actions": [
-							{
-								"type": "datetimepicker",
-								"label": "日時を選択してください。",
-								"data": "action=settime",
-								"mode": "datetime",
-								"initial": "2020-01-01t00:00",
-								"max": "2025-12-30t23:59",
-								"min": "2020-01-01t00:00"
-							}
-						]
-					}
-				}
-			],
-			"notificationDisabled": false // trueだとユーザーに通知されない
-		}),
-	});
-}*/
+function takeProfit(){
+    var sheet = getSheets().getSheetByName('本番帳簿');
+    var last_row = sheet.getLastRow();
+    var data = sheet.getRange(last_row, 1,1,9).getValues();
+    sheet.getRange(last_row,8).setValue((data[0][6]-data[0][3])*100)
+    sheet.getRange(last_row,9).setValue((data[0][6]-data[0][3])*100*500)
+    sheet.getRange(last_row,2).setValue('completed');
+    Logger.log('clear');
+    
+}
