@@ -56,9 +56,9 @@ function noticeBB(pair){
     }if(past_percent>-66 && percent<=-66){
         notice('30分足ボリンジャーバンドで買いのチャンス！！');
     }
-/*
+
     mysheet = getSheets().getSheetByName(pair+'_4h');
-    var bb = new BB(mysheet);
+    bb = new BB(mysheet);
     past_percent = (past_trade-bb.MA)/(bb.Up-bb.MA)
     percent = (now_trade-bb.MA)/(bb.Up-bb.MA)
     past_percent *= 100;
@@ -68,7 +68,7 @@ function noticeBB(pair){
     }if(past_percent>-66 && percent<=-66){
         notice('4時間足ボリンジャーバンドで買いのチャンス！！');
     }
-*/
+
     /*
     mysheet = getSheets().getSheetByName(pair+'_1d');
     var bb = new BB(mysheet);
@@ -115,17 +115,185 @@ function noticeRSI(pair){
     }
 }
 
-//イベントの振り分け
+//LINEに記録したラインに触れた時に通知する
+
+
+//LINEに投稿された文字列に反応する関数
 function doPost(e) {
+  var sheet = getSheets().getSheetByName('本番帳簿');
+  var last_row = sheet.getLastRow();
+  var stock = sheet.getRange(1,1).getValue();
+ 
+  var channel_access_token = PropertiesService.getScriptProperties().getProperty('CHANNEL_ACCESS_TOKEN');
   var events = JSON.parse(e.postData.contents).events;
+  if(events[0].message.type=="text"){
+      var post_text = events[0].message.text;
+  }else{
+      return;
+  }
+  if(post_text.indexOf('.') != -1){
+      choiceAction();
+      sheet.getRange(1,1).setValue(post_text);
+  }else if('buy order' == post_text){
+      var now = new Date();
+      sheet.appendRow([now,'買い',stock]);
+      notice('買い注文記録完了');
+  }else if('sell order' == post_text){
+      var now = new Date();
+      sheet.appendRow([now,'売り',stock]);
+      notice('売り注文記録完了');
+  }else if('stop order' == post_text){
+      var tradetype = sheet.getRange(last_row,2).getValue();
+      var order = sheet.getRange(last_row,3).getValue();
+      if((tradetype == '買い' && order > stock) 
+      || (tradetype == '売り' && order < stock)){
+          sheet.getRange(last_row,4).setValue(stock);
+          notice('損切記録完了');
+      }else{
+          notice('損切位置がおかしいです');
+          return;
+      }
+  }else if('limit order' == post_text){
+      var tradetype = sheet.getRange(last_row,2).getValue();
+      var order = sheet.getRange(last_row,3).getValue();
+      if((tradetype == '買い' && order < stock) 
+      || (tradetype == '売り' && order > stock)){
+          sheet.getRange(last_row,5).setValue(stock);
+          notice('利確記録完了');
+      }else{
+          notice('利得位置がおかしいです');
+          return;
+      }
+      
+  }
+  
+  /*　オウム返し
   events.forEach(function(event) {
     if(event.type == "message") {
-      var UserId = event.source.userId;
-      var UserMessage = event.message.text;
-      if ('通知' == UserMessage){
-        notice();
+      reply(event);
       }
-   }
-  });
-  
+    }
+  );
+  */
 }
+ //オウム返し関数
+function reply(e) {
+　var sheet = getSheets().getSheetByName('本番帳簿');
+  const CHANNEL_ACCESS_TOKEN = PropertiesService.getScriptProperties().getProperty('CHANNEL_ACCESS_TOKEN');
+  var message = {
+    "replyToken" : e.replyToken,
+    "messages" : [
+      {
+        "type" : "text",
+        "text" : ((e.message.type=="text") ? e.message.text : "Text以外は返せません・・・")
+      }
+    ]
+  };
+ 
+  var replyData = {
+    "method" : "post",
+    "headers" : {
+      "Content-Type" : "application/json",
+      "Authorization" : "Bearer " + CHANNEL_ACCESS_TOKEN,
+    },
+    "payload" : JSON.stringify(message)
+  };
+  var response = UrlFetchApp.fetch("https://api.line.me/v2/bot/message/reply", replyData);
+  return response.getResponseCode();
+}
+
+//選択肢を表示させる関数
+function choiceAction() {
+	/* スクリプトプロパティのオブジェクトを取得 */
+  const CHANNEL_ACCESS_TOKEN = PropertiesService.getScriptProperties().getProperty('CHANNEL_ACCESS_TOKEN');
+  const USER_ID = PropertiesService.getScriptProperties().getProperty('USER_ID');
+	/* ボタンテンプレートメッセージを送る(message) */
+	UrlFetchApp.fetch('https://api.line.me/v2/bot/message/push', {
+		'headers': {
+			'Content-Type': 'application/json',
+			'Authorization': 'Bearer ' + CHANNEL_ACCESS_TOKEN, // スクリプトプロパティにトークンは事前に追加しておく
+		},
+		'method': 'POST',
+		'payload': JSON.stringify({
+			"to": USER_ID, // スクリプトプロパティに送信先IDは事前に追加しておく
+			"messages": [
+				{
+					"type": "template",
+					"altText": "message",
+					"template": {
+						"type": "buttons",
+						
+						"title": "メニュー",
+						"text": "以下より選択してください。",
+						
+						"actions": [
+                            {
+								"type": "message",
+								"label": "買い注文",
+								"text": "buy order"
+							},
+							{
+								"type": "message",
+								"label": "売り注文",
+								"text": "sell order"
+							},
+							{
+								"type": "message",
+								"label": "損切",
+								"text": "stop order"
+							},
+                            {
+								"type": "message",
+								"label": "利確",
+								"text": "limit order"
+							}
+						]
+					}
+				}
+			],
+			"notificationDisabled": false // trueだとユーザーに通知されない
+		}),
+	});
+}
+
+
+/*日時を選択する関数
+function choiceDate() {
+	//スクリプトプロパティのオブジェクトを取得
+	const CHANNEL_ACCESS_TOKEN = PropertiesService.getScriptProperties().getProperty('CHANNEL_ACCESS_TOKEN');
+    const USER_ID = PropertiesService.getScriptProperties().getProperty('USER_ID');
+	// ボタンテンプレートメッセージを送る(datetime_picker)
+	UrlFetchApp.fetch('https://api.line.me/v2/bot/message/push', {
+		'headers': {
+			'Content-Type': 'application/json',
+			'Authorization': 'Bearer ' + CHANNEL_ACCESS_TOKEN, // スクリプトプロパティにトークンは事前に追加しておく
+		},
+		'method': 'POST',
+		'payload': JSON.stringify({
+			"to": USER_ID, // スクリプトプロパティに送信先IDは事前に追加しておく
+			"messages": [
+				{
+					"type": "template",
+					"altText": "datetime_picker",
+					"template": {
+						"type": "buttons",
+						"title": "メニュー",
+						"text": "以下より選択してください。",
+						"actions": [
+							{
+								"type": "datetimepicker",
+								"label": "日時を選択してください。",
+								"data": "action=settime",
+								"mode": "datetime",
+								"initial": "2020-01-01t00:00",
+								"max": "2025-12-30t23:59",
+								"min": "2020-01-01t00:00"
+							}
+						]
+					}
+				}
+			],
+			"notificationDisabled": false // trueだとユーザーに通知されない
+		}),
+	});
+}*/

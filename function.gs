@@ -103,7 +103,6 @@ function getCandle(pair,data_num){
     var pair_n = pairs.indexOf(pair);
     var data = mysheet.getRange(last_row-data_num, pair_n+2,data_num+1,1).getValues();
     for(i=1; i<data_num+1; i++){
-        Logger.log(data[i][0]);
         if(data[i][0] == '.'){
         array.push(data[i-1][0]);
         }else{
@@ -141,7 +140,6 @@ function addRSI(sheet){
     
     for(i=0;i<period;i++){
         diff += Math.abs(period_row[i+1][0]-period_row[i][0]);
-        Logger.log(i);
         if(period_row[i+1][0]-period_row[i][0]>0){
             plus_diff += period_row[i+1][0]-period_row[i][0];
         }
