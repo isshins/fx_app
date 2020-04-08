@@ -63,6 +63,7 @@ function dataDivide(pair){
         var bb = new BB(mysheet);
         data = addFeature(mysheet,getCandle(pair,5));
         mysheet.appendRow(data);
+        noticeRSI('GBP_5m');//RSI通知
         delOld(mysheet,5000);
     }
     if(now.getMinutes()%30==0){
@@ -71,7 +72,7 @@ function dataDivide(pair){
         bb = new BB(mysheet);
         data = addFeature(mysheet,getCandle(pair,30));
         mysheet.appendRow(data);
-        noticeRSI(pair);//RSI通知
+        noticeRSI('GBP_30m');//RSI通知
         delOld(mysheet,5000);
     }
     if(now.getHours()%4==0 && now.getMinutes()==0){
@@ -267,16 +268,21 @@ function getEx(){
     return sheet.getRange(last_row,3,1,2).getValues()[0];
 }
 
+*/
 
 //直近の買値と売値を取得
 function getNow(){
-    var sheet = exchange.getSheet().getActiveSheet();
+    var sheet = getSheets().getSheetByName('data_1m');
     var last_row = sheet.getLastRow();
-    var now_trade = sheet.getRange(last_row,5).getValues()[0];
-    Logger.log(now_trade);
+    var now_trade = sheet.getRange(last_row,2).getValue();
+     Logger.log(now_trade);
+    if(now_trade == '0' || now_trade == '.'){
+    getNow();
+    Logger.log('getNow() is missing');
+    }
     return now_trade;
 }
-*/
+
 //土曜日6:50~月曜日6:59のスクレイピング停止
 function stopScrape(date){
     var stop = 0;
@@ -290,7 +296,6 @@ function stopScrape(date){
     if(now.getDay()==0 || now.getDay()==1 && now.getHours()<=6){
         stop = 1;
     }
-    Logger.log(stop);
     return stop;
 }
 
