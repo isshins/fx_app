@@ -164,64 +164,78 @@ function doPost(e) {
   var channel_access_token = PropertiesService.getScriptProperties().getProperty('CHANNEL_ACCESS_TOKEN');
   var events = JSON.parse(e.postData.contents).events;
   var now = new Date();
-  var state = sheet.getRange(last_row,2).getValue();
-  if(events[0].message.type=="text"){
+  var state = sheet.getRange(last_row,2);
+  var stock = sheet.getRange(1,1).getValue();
+  if(events[0].type=="message"){                 ///textに対する反応
       var post_text = events[0].message.text;
+      var stop = sheet.getRange(last_row,5);
+      var limit = sheet.getRange(last_row,6);
       if(post_text.indexOf('.') != -1){
+          var now_trade = getNow()
+          var tradetype = sheet.getRange(last_row,3).getValue();
+          var order = sheet.getRange(last_row,4).getValue();
           sheet.getRange(1,1).setValue(post_text);
-          var stock = sheet.getRange(1,1).getValue();
-          if(state!=null){
-              choiceAction(state);     
-          }else if(sheet.getRange(last_row,5).getValue()==null){
-              var tradetype = sheet.getRange(last_row,3).getValue();
-              var order = sheet.getRange(last_row,4).getValue();
+          stock = sheet.getRange(1,1).getValue();
+          if(state.getValue()=='trading' || state.getValue()=='completed'){
+              if(Math.abs(now_trade-stock)<0.3){
+                  choiceAction(state.getValue());
+              }else{
+                  notice('現在の相場とかけ離れてる値です')
+              }
+          }if(stop.isBlank()){
               if((tradetype == '買い' && order > stock) 
               || (tradetype == '売り' && order < stock)){
-                  sheet.getRange(last_row,5).setValue(stock);
-                  notice('損切記録完了しました\n\n利確ポイントを入力してください');
+                  stop.setValue(stock);
+                  notice(order+'で損切り\n利確ポイントを入力してください');
+                  return;
               }else{
-                  notice('損切位置がおかしいです\n\n正しい損切り位置を入力してください');
+                  notice('損切位置がおかしいです\n正しい損切り位置を入力してください');
                   return;
               }
-          }else if(sheet.getRange(last_row,5).getValue()!=null && sheet.getRange(last_row,6).getValue()==null){
-              var tradetype = sheet.getRange(last_row,3).getValue();
-              var order = sheet.getRange(last_row,4).getValue();
+          }if(stop.getValue()!=null && limit.isBlank()){
               if((tradetype == '買い' && order < stock) 
               || (tradetype == '売り' && order > stock)){
-                  sheet.getRange(last_row,6).setValue(stock);
-                  notice('利確記録完了しました');
+                  limit.setValue(stock);
+                  notice(order+'で利確');
                   state.setValue('trading');
+                  return;
               }else{
-                  notice('利得位置がおかしいです\n\n正しい損切り位置を入力してください');
+                  notice('利得位置がおかしいです\n正しい損切り位置を入力してください');
                   return;
               }
           }
-      }else if(post_text.indexOf('pips') != -1){
-      }else if(post_text.indexOf('なし') != 1){
-          if(sheet.getRange(last_row,5).getValue()==null){
-              sheet.getRange(last_row,5).setValue('なし');
-          }else{
-              sheet.getRange(last_row,6).setValue('なし');
+      }if(post_text.indexOf('pips') != -1){
+      }if(post_text.indexOf('なし') != -1){
+          if(stop.isBlank()){
+              stop.setValue('なし');
+              return;
+          }if(stop!=null && limit.isBlank()){
+              limit.setValue('なし');
+              return;
           }
       } 
-  }else if(events[0].message.type=="postback"){
+  }else if(events[0].type=="postback"){     ///ボタンによるpostbackに対する反応
       var data = events[0].postback.data;
+      var order = sheet.getRange(last_row,4).getValue();
       if('notice' == data){
           var now_trade = getNow();
       }
-      if(state == 'completed'){
+      if(state.getValue() == 'completed'){
           if('buy order' == data){      
               sheet.appendRow([now,null,'買い',stock]);
-              notice('買い注文記録完了しました\n\n損切ポイントを入力してください');
+              notice(order+'で買い\n損切ポイントを入力してください');
           }else if('sell order' == data){
               sheet.appendRow([now,null,'売り',stock]);
-              notice('売り注文記録完了しました\n\n損切ポイントを入力してください');
+              notice(order+'で売り\n損切ポイントを入力してください');
           }
       }else{
           if('close order' == data){
-              sheet.getRange(last_row,7).setValue(stock);
-              notice('注文決済記録完了しました');
+              var finish = sheet.getRange(last_row,7);
+              var profit = sheet.getRange(last_row,9).getValue();
+              finish.setValue(stock);
               takeProfit();
+              notice(finish.getValue()+'で決済しました\n収支は'+profit+'円です');
+              return;
           }
       }
   }
@@ -279,7 +293,7 @@ function choiceAction(state) {
 			    "messages": [
 				    {
 					    "type": "template",
-					    "altText": "message",
+					    "altText": "postback",
 					    "template": {
 						    "type": "buttons",
 						    "title": "メニュー",
@@ -288,17 +302,17 @@ function choiceAction(state) {
                                 {
 								    "type": "postback",
 								    "label": "買い注文",
-								    "date": "buy order"
+								    "data": "buy order"
 							    },
 							    {
 								    "type": "postback",
 								    "label": "売り注文",
-								    "text": "sell order"
+								    "data": "sell order"
 							    },
                                 {
 								    "type": "postback",
 								    "label": "通知",
-								    "text": "notice"
+								    "data": "notice"
 							    }
 						    ]
 					    }
@@ -307,7 +321,7 @@ function choiceAction(state) {
 			    "notificationDisabled": false // trueだとユーザーに通知されない
 		    }),
 	    });
-    }else if(state =='trading'){
+    }if(state =='trading'){
 	    UrlFetchApp.fetch('https://api.line.me/v2/bot/message/push', {
 	    	'headers': {
 		    	'Content-Type': 'application/json',
@@ -319,7 +333,7 @@ function choiceAction(state) {
 			    "messages": [
 				    {
 					    "type": "template",
-					    "altText": "message",
+					    "altText": "postback",
 					    "template": {
 						    "type": "buttons",
 						    "title": "メニュー",
@@ -328,12 +342,12 @@ function choiceAction(state) {
                                 {
 								    "type": "postback",
 								    "label": "決済",
-								    "text": "close order"
+								    "data": "close order"
 							    },
                                 {
 								    "type": "postback",
 								    "label": "通知",
-								    "text": "notice"
+								    "data": "notice"
 							    }
 						    ]
 					    }
@@ -349,9 +363,14 @@ function takeProfit(){
     var sheet = getSheets().getSheetByName('本番帳簿');
     var last_row = sheet.getLastRow();
     var data = sheet.getRange(last_row, 1,1,9).getValues();
-    sheet.getRange(last_row,8).setValue((data[0][6]-data[0][3])*100)
-    sheet.getRange(last_row,9).setValue((data[0][6]-data[0][3])*100*500)
-    sheet.getRange(last_row,2).setValue('completed');
-    Logger.log('clear');
-    
+    var pips = sheet.getRange(last_row,8)
+    var profit = sheet.getRange(last_row,9)
+    if(data[0][2]=='買い'){
+        pips.setValue((data[0][6]-data[0][3])*100)
+        profit.setValue((data[0][6]-data[0][3])*100*500)
+    }if(data[0][2]=='売り'){
+        pips.setValue((data[0][3]-data[0][6])*100)
+        profit.setValue((data[0][3]-data[0][6])*100*500)
+    }
+    sheet.getRange(last_row,2).setValue('completed');  
 }

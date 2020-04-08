@@ -275,7 +275,6 @@ function getNow(){
     var sheet = getSheets().getSheetByName('data_1m');
     var last_row = sheet.getLastRow();
     var now_trade = sheet.getRange(last_row,2).getValue();
-     Logger.log(now_trade);
     if(now_trade == '0' || now_trade == '.'){
     getNow();
     Logger.log('getNow() is missing');
