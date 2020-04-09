@@ -170,17 +170,19 @@ function doPost(e) {
       var post_text = events[0].message.text;
       var stop = sheet.getRange(last_row,5);
       var limit = sheet.getRange(last_row,6);
+      var order = sheet.getRange(last_row,4).getValue();
+      var now_trade = getNow();
+      var tradetype = sheet.getRange(last_row,3).getValue();
       if(post_text.indexOf('.') != -1){
-          var now_trade = getNow()
-          var tradetype = sheet.getRange(last_row,3).getValue();
-          var order = sheet.getRange(last_row,4).getValue();
           sheet.getRange(1,1).setValue(post_text);
           stock = sheet.getRange(1,1).getValue();
           if(state.getValue()=='trading' || state.getValue()=='completed'){
               if(Math.abs(now_trade-stock)<0.3){
                   choiceAction(state.getValue());
+                  return;
               }else{
-                  notice('現在の相場とかけ離れてる値です')
+                  notice('現在の相場とかけ離れてる値です');
+                  return;
               }
           }if(stop.isBlank()){
               if((tradetype == '買い' && order > stock) 
@@ -204,7 +206,22 @@ function doPost(e) {
                   return;
               }
           }
-      }if(post_text.indexOf('pips') != -1){
+      }if(post_text.indexOf('pips') != -1 && state.getValue()=='trading'){
+          if(tradetype == '買い'){
+              var buypips = (((now_trade-order)*100)-1.3).toFixed(1);
+              if(buypips>0){
+                  notice(buypips+'pips勝っています\n+'+(buypips*500)+'円');
+              }if(buypips<0){
+                  notice(buypips+'pips負けています\n-'+(buypips*500)+'円');
+              }
+          }if(tradetype == '売り'){
+              var sellpips = (((order-now_trade)*100)-1.3).toFixed(1);
+              if(sellpips>0){
+                  notice(sellpips+'pips勝っています\n+'+(sellpips*500)+'円');
+              }if(sellpips<0){
+                  notice(sellpips+'pips負けています\n-'+(sellpips*500)+'円');
+              }
+          }
       }if(post_text.indexOf('なし') != -1){
           if(stop.isBlank()){
               stop.setValue('なし');
@@ -234,7 +251,6 @@ function doPost(e) {
               var profit = sheet.getRange(last_row,9).getValue();
               finish.setValue(stock);
               takeProfit();
-              notice(finish.getValue()+'で決済しました\n収支は'+profit+'円です');
               return;
           }
       }
@@ -366,11 +382,14 @@ function takeProfit(){
     var pips = sheet.getRange(last_row,8)
     var profit = sheet.getRange(last_row,9)
     if(data[0][2]=='買い'){
-        pips.setValue((data[0][6]-data[0][3])*100)
-        profit.setValue((data[0][6]-data[0][3])*100*500)
+        var buypips = (data[0][6]-data[0][3])*100;
+        pips.setValue(buypips);
+        profit.setValue(buypips*500);
     }if(data[0][2]=='売り'){
-        pips.setValue((data[0][3]-data[0][6])*100)
-        profit.setValue((data[0][3]-data[0][6])*100*500)
+        var sellpips = (data[0][3]-data[0][6])*100;
+        pips.setValue(sellpips);
+        profit.setValue(sellpips*500);
     }
+    notice(data[0][7]+'で決済しました\n収支は'+profit+'円です');
     sheet.getRange(last_row,2).setValue('completed');  
 }
