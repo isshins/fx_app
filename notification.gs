@@ -168,20 +168,16 @@ function doPost(e) {
       var post_text = events[0].message.text;
       var stop = sheet.getRange(last_row,5);
       var limit = sheet.getRange(last_row,6);
+      var lot = sheet.getRange(last_row,5);
+      var spread = sheet.getRange(last_row,6);
       var order = sheet.getRange(last_row,4).getValue();
-      var now_trade = getNow();
       var tradetype = sheet.getRange(last_row,3).getValue();
       if(post_text.indexOf('.') != -1){
           sheet.getRange(1,1).setValue(post_text);
           stock = sheet.getRange(1,1).getValue();
           if(state.getValue()=='trading' || state.getValue()=='completed'){
-              if(Math.abs(now_trade-stock)<0.3){
-                  choiceAction(state.getValue());
-                  return;
-              }else{
-                  notice('現在の相場とかけ離れてる値です');
-                  return;
-              }
+              choiceAction(state.getValue());
+              return;
           }if(stop.isBlank()){
               if((tradetype == '買い' && order > stock) 
               || (tradetype == '売り' && order < stock)){
@@ -205,6 +201,7 @@ function doPost(e) {
               }
           }
       }if(post_text.indexOf('pips') != -1 && state.getValue()=='trading'){
+          var now_trade = getNow();
           if(tradetype == '買い'){
               var buypips = (((now_trade-order)*100)-1.3).toFixed(1);
               if(buypips>0){
@@ -236,6 +233,7 @@ function doPost(e) {
       var data = events[0].postback.data;
       if('notice goal' == data){
           sheet.getRange(1,3).setValue(stock);
+          notice('設定完了');
       }
       if(state.getValue() == 'completed'){
           if('buy order' == data){      
@@ -328,7 +326,7 @@ function choiceAction(state) {
                                 {
 								    "type": "postback",
 								    "label": "通知",
-								    "data": "notice"
+								    "data": "notice goal"
 							    }
 						    ]
 					    }
@@ -362,6 +360,16 @@ function choiceAction(state) {
 							    },
                                 {
 								    "type": "postback",
+								    "label": "損切変更",
+								    "data": "change stop"
+							    },
+                                {
+								    "type": "postback",
+								    "label": "利得変更",
+								    "data": "change limit"
+							    },
+                                {
+								    "type": "postback",
 								    "label": "通知",
 								    "data": "notice goal"
 							    }
@@ -378,12 +386,13 @@ function choiceAction(state) {
 function noticeGoal(){
     var sheet = getSheets().getSheetByName('本番帳簿');
     var now = getNow();
+    var past = getPast();
     var goal = sheet.getRange(1,3).getValue();
     if(sheet.getRange(1,3).isBlank()==false){
-        if(Math.abs(now-goal)<0.05){
+        if(Math.abs(now-goal)<0.05 && Math.abs(past-goal)>=0.05){
             notice(goal+'まであと5pip以内');
             sheet.getRange(1,3).clear();
-        }else if(Math.abs(now-goal)<0.1){
+        }else if(Math.abs(now-goal)<0.10 && Math.abs(past-goal)>=0.10){
             notice(goal+'まであと10pip以内');
         }
     }

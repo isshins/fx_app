@@ -277,10 +277,22 @@ function getNow(){
     var last_row = sheet.getLastRow();
     var now_trade = sheet.getRange(last_row,2).getValue();
     if(now_trade == '0' || now_trade == '.'){
-    getNow();
-    Logger.log('getNow() is missing');
+        getNow();
+        Logger.log('getNow() is missing');
     }
     return now_trade;
+}
+
+//直近の買値と売値を取得
+function getPast(){
+    var sheet = getSheets().getSheetByName('data_1m');
+    var last_row = sheet.getLastRow();
+    var past_trade = sheet.getRange(last_row-1,2).getValue();
+    if(past_trade == '0' || past_trade == '.'){
+        getPast();
+        Logger.log('getPast() is missing');
+    }
+    return past_trade;
 }
 
 //土曜日6:50~月曜日6:59のスクレイピング停止
