@@ -63,7 +63,8 @@ function dataDivide(pair){
         var bb = new BB(mysheet);
         data = addFeature(mysheet,getCandle(pair,5));
         mysheet.appendRow(data);
-        noticeRSI('GBP_5m');//RSI通知
+        noticeRSI(pair+'_5m');//RSI通知
+        noticeSharp(pair);//急変化通知
         delOld(mysheet,5000);
     }
     if(now.getMinutes()%30==0){
@@ -72,7 +73,7 @@ function dataDivide(pair){
         bb = new BB(mysheet);
         data = addFeature(mysheet,getCandle(pair,30));
         mysheet.appendRow(data);
-        noticeRSI('GBP_30m');//RSI通知
+        noticeRSI(pair+'_30m');//RSI通知
         delOld(mysheet,5000);
     }
     if(now.getHours()%4==0 && now.getMinutes()==0){
