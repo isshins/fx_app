@@ -1,10 +1,7 @@
 //テスト関数
 function test(){
-    var now =Date.now();
-    var pair = 'GBP'
-    var mysheet = getSheets().getSheetByName(pair+'_30m');
-    var last_row = mysheet.getLastRow();
-noticeRSI(pair);
+    var fin = 132.861;
+takeProfit(fin);
 
 
 }
@@ -63,7 +60,6 @@ function dataDivide(pair){
         var bb = new BB(mysheet);
         data = addFeature(mysheet,getCandle(pair,5));
         mysheet.appendRow(data);
-        noticeRSI(pair+'_5m');//RSI通知
         noticeSharp(pair);//急変化通知
         delOld(mysheet,5000);
     }
@@ -74,7 +70,7 @@ function dataDivide(pair){
         data = addFeature(mysheet,getCandle(pair,30));
         mysheet.appendRow(data);
         noticeRSI(pair+'_30m');//RSI通知
-        delOld(mysheet,5000);
+        delOld(mysheet,3000);
     }
     if(now.getHours()%4==0 && now.getMinutes()==0){
         //４時間足
@@ -82,7 +78,7 @@ function dataDivide(pair){
         bb = new BB(mysheet);
         data = addFeature(mysheet,getCandle(pair,240));
         mysheet.appendRow(data);
-        delOld(mysheet,5000);
+        delOld(mysheet,2000);
     }
     if(now.getHours()==0 && now.getMinutes()==0){
         //日足
@@ -90,7 +86,7 @@ function dataDivide(pair){
         bb = new BB(mysheet);
         data = addFeature(mysheet,getCandle(pair,1440));
         mysheet.appendRow(data);
-        delOld(mysheet,5000);
+        delOld(mysheet,1000);
     }
 }
 
@@ -99,8 +95,7 @@ function getCandle(pair,data_num){
     var pairs = ["GBP","USD","EUR"];
     var mysheet = getSheets().getSheetByName('data_1m');
     var array = [];
-    var now = Date.now();
-    var past = new Date(now-60000*data_num);
+    var now = new Date();
     var last_row = mysheet.getLastRow();
     var pair_n = pairs.indexOf(pair);
     var data = mysheet.getRange(last_row-data_num, pair_n+2,data_num+1,1).getValues();
@@ -111,7 +106,13 @@ function getCandle(pair,data_num){
         array.push(data[i][0]);
         }
     }
-    return [past,Math.max.apply(null,array),Math.min.apply(null,array), array[0], array[data_num-1]];
+    if(data_num==1440){
+        var now = Date.now();
+        var past = new Date(now-60000*data_num);
+        return [past,Math.max.apply(null,array),Math.min.apply(null,array), data[0][0], array[data_num-1]]; 
+    }else{
+        return [now,Math.max.apply(null,array),Math.min.apply(null,array), data[0][0], array[data_num-1]];
+    }
 }
 
 //特徴量を加える　&　ボリンジャーバンドの割合が60%を超えた時に通知する
@@ -159,49 +160,6 @@ function delOld(sheet,limit){
         sheet.deleteRows(2,diff);
     }
 }
-
-/*
-//単純移動平均線とボリンジャーバンド
-function getBB(sheet,mode){
-    var space = 20;
-    var v_rate = 3 
-    var last_row = sheet.getLastRow();
-    var sum = 0;
-    var variance = 0;
-    var ema = 0;
-
-    if(last_row>21){
-    var space_row = sheet.getRange(last_row-(space-1), 5, space, 1).getValues();
-    
-        for(i=0;i<space;i++){                            //modeが0の時には単純移動平均線を出力
-            sum+=space_row[i][0];
-        }
-        ema=sum/space;
-
-        if(mode>0){                                      //modeが1以上の時には上のボリンジャーバンドを出力
-            for(i=0; i<space; i++){
-                variance+=Math.pow(ema-space_row[i][0],2);
-            }
-            variance=variance/(space-1);
-            var std=Math.sqrt(variance);
-            if(mode==2){                                 //modeが2の時にはボリンジャーバンドの際を100%、EMAを0％とした時の現在の終値の割合を出力
-                return ((space_row[space-1][0]-ema)/(v_rate*std))*100;  
-            }
-            return ema+v_rate*std;
-        }
-
-        if(mode<0){                                      //modeが-1以下の時には下のボリンジャーバンドを出力
-            for(i=0; i<space; i++){
-                variance+=Math.pow(ema-space_row[i][0],2);
-            }
-            variance=variance/(space-1);
-            var std=Math.sqrt(variance);
-            return ema-v_rate*std;
-        }
-    }
-    return ema;
-}
-*/
 
 /*
 //極値の更新

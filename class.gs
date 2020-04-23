@@ -31,10 +31,13 @@ var BB = function(sheet){
         this.std = Math.sqrt(variance); 
 
     //上のボリンジャーバンドを出力
-        this.Up = this.MA+v_rate+this.std;
+        this.Up = this.MA+v_rate*this.std;
     
     //下のボリンジャーバンドを出力
         this.Down = this.MA-v_rate*this.std;
+        
+    //ボリンジャーバンドの幅を出力
+        this.length = this.Up-this.down;
    
     //ボリンジャーバンドの際を100%、EMAを0％とした時の現在の終値の割合を出力
 
