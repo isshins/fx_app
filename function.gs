@@ -1,7 +1,6 @@
 //テスト関数
 function test(){
-    var fin = 132.861;
-takeProfit(fin);
+   choiceAction('completed')
 
 
 }

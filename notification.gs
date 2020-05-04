@@ -1,7 +1,8 @@
 //通知関数まとめ
 function noticeAny(){
     noticeOrder();
-    noticeGoal();
+    noticeGoal(1);
+    noticeGoal(2);
 }
 
 //LINEに通知を送る関数
@@ -156,23 +157,28 @@ function doPost(e) {
   var channel_access_token = PropertiesService.getScriptProperties().getProperty('CHANNEL_ACCESS_TOKEN');
   var events = JSON.parse(e.postData.contents).events;
   var now = new Date();
-  var state = sheet.getRange(last_row,2);
+  var state = sheet.getRange(last_row,2).getValue();
   var stock = sheet.getRange(1,1).getValue();
+  var tradetype = sheet.getRange(last_row,3).getValue();
   if(events[0].type=="message"){                 ///textに対する反応
       var post_text = events[0].message.text;
-      var post = post_text.split('\n');
       var order = sheet.getRange(last_row,5).getValue();
-      var tradetype = sheet.getRange(last_row,3).getValue();
       var lot = sheet.getRange(last_row,4).getValue();
-      if(post_text.indexOf('.') != -1){
-          sheet.getRange(1,1).setValue(post[0]);
+      
+      if(post_text.indexOf('\n') != -1 && sheet.getRange(last_row,2).isBlank() != true){
+          sheet.getRange(1,1).setValue(post_text);
+          choiceAction('words');
+          return;
+      }if(post_text.indexOf('.') != -1){
+          var post = post_text.split('\n');
+          sheet.getRange(1,1).setValue(post[0]); //stockに上書き
           stock = sheet.getRange(1,1).getValue();
-          if(state.getValue()=='trading' || state.getValue()=='completed'){           //選択肢を送信
-              choiceAction(state.getValue());
+          if(state=='trading' || state=='completed'){           //選択肢を送信
+              choiceAction(state);
               return;
           }if(post.length>1){                                                         //損切、利得、(lot数)を三行で取得
-              var lot_text ='';
               var lot = 0.5;
+              var lot_text = '取引量は0.5lot\n'
               if(post.length>2){
                   lot_text = '取引量は'+post[2]+'lot\n'                                 //lot数の設定
                   sheet.getRange(last_row,4).setValue(post[2]);
@@ -181,7 +187,7 @@ function doPost(e) {
               
               if((tradetype == '買い' && order > post[0])
               || (tradetype == '売り' && order < post[0])){                             //損切ポイントの設定
-                  var stop_text = post[0]+'で損切り('+((Math.abs(post[0]-order)*-100)*lot*1000).toFixed(0)+'円)\n';
+                  var stop_text = post[0]+'で損切り('+(Math.abs(post[0]-order)*-100).toFixed(1)+'pips)\n';
                   sheet.getRange(last_row,6).setValue(post[0]);
               }else if(post[0].indexOf('なし') != -1){
                   var stop_text = '損切はなし\n'
@@ -193,7 +199,7 @@ function doPost(e) {
               
               if((tradetype == '買い' && order < post[1]) 
               || (tradetype == '売り' && order > post[1])){                             //利得ポイントの設定
-                  var limit_text = post[1]+'で利確('+((Math.abs(post[1]-order)*100)*lot*1000).toFixed(0)+'円)\n'
+                  var limit_text = post[1]+'で利確('+(Math.abs(post[1]-order)*100).toFixed(1)+'pips)\n'
                   sheet.getRange(last_row,7).setValue(post[1]);
               }else if(post[1].indexOf('なし') != -1){
                   var limit_text = '利確はなし\n'
@@ -205,38 +211,50 @@ function doPost(e) {
               
               var send = stop_text+limit_text+lot_text+'で記録しました';
               notice(send);
-              state.setValue('trading'); 
+              sheet.getRange(last_row,2).setValue('trading'); 
             }
             return;
-      }if(post_text.indexOf('pip') != -1 && state.getValue()=='trading'){              //pipを含むテキストを受信したら、pip数と金額を教えてくれる
+      }if(post_text.indexOf('pip') != -1 && state=='trading'){              //pipを含むテキストを受信したら、pip数と金額を教えてくれる
           var now_trade = getNow();
           if(tradetype == '買い'){
               var buypips = ((now_trade-order)*100).toFixed(1);
               if(buypips>0){
-                  notice(buypips+'pips勝っています\n+'+(buypips*lot*1000).toFixed(0)+'円');
+                  notice(buypips+'pips勝っています\n+');
               }if(buypips<0){
-                  notice(buypips+'pips負けています\n'+(buypips*lot*1000).toFixed(0)+'円');
+                  notice(buypips+'pips負けています\n');
               }
           }if(tradetype == '売り'){
               var sellpips = ((order-now_trade)*100).toFixed(1);
               if(sellpips>0){
-                  notice(sellpips+'pips勝っています\n+'+(sellpips*lot*1000).toFixed(0)+'円');
+                  notice(sellpips+'pips勝っています\n+');
               }if(sellpips<0){
-                  notice(sellpips+'pips負けています\n'+(sellpips*lot*1000).toFixed(0)+'円');
+                  notice(sellpips+'pips負けています\n');
               }
           }
+          return;
+      }if(post_text.indexOf('通知') != -1){
+          sheet.getRange(1,3).setValue(stock);
+          notice('設定完了');
+          return;
       }
-  }else if(events[0].type=="postback"){     ///ボタンによるpostbackに対する反応
+  }if(events[0].type=="postback"){     ///ボタンによるpostbackに対する反応
       var data = events[0].postback.data;
+      Logger.log(data);
       if('notice goal' == data){                                                       //目的のレートに到達したら通知
           sheet.getRange(1,3).setValue(stock);
           notice('設定完了');
+      }if("entry reason" == data){
+              sheet.getRange(last_row, 11).setValue(stock);
+              notice('書込完了');
+      }if('comment' == data){
+              sheet.getRange(last_row, 12).setValue(stock);
+              notice('書込完了');
       }
-      if(state.getValue() == 'completed'){
+      if(state == 'completed'){
           if('buy order' == data){                                                     //買い注文の設定
               sheet.appendRow([now,null,'買い',0.5,stock]);
               notice(stock+'で買い\n損切ポイントと\n利得ポイントと\nlot数(0.5以外なら)\nを入力してください');
-          }else if('sell order' == data){                                              //売り注文の設定
+          }if('sell order' == data){                                              //売り注文の設定
               sheet.appendRow([now,null,'売り',0.5,stock]);
               notice(stock+'で売り\n損切ポイントと\n利得ポイントと\nlot数(0.5以外なら)\nを入力してください');
           }
@@ -250,7 +268,7 @@ function doPost(e) {
               if((tradetype == '買い' && order > stock)
               || (tradetype == '売り' && order < stock)){
                   sheet.getRange(last_row,6).setValue(stock);
-                  notice(stock+'に損切ポイントを変更しました('+((Math.abs(stock-order)*-100)*lot*1000).toFixed(0)+'円)');
+                  notice(stock+'に損切ポイントを変更しました('+(Math.abs(stock-order)*-100).toFixed(1)+'pips)');
                   return;
               }else{
                   notice('損切位置がおかしいです\n正しい損切り位置を入力してください');
@@ -258,11 +276,11 @@ function doPost(e) {
               }
           }if('change limit' == data){                                                   //利確ポイントの変更
               var order = sheet.getRange(last_row,5).getValue();
-              var lot = sheet.getRange(last_row,4).getValuer();
+              var lot = sheet.getRange(last_row,4).getValue();
               if((tradetype == '買い' && order < stock) 
               || (tradetype == '売り' && order > stock)){  
                   sheet.getRange(last_row,7).setValue(stock);
-                  notice(stock+'に損切ポイントを変更しました('+((Math.abs(stock-order)*100)*lot*1000).toFixed(0)+'円)');
+                  notice(stock+'に損切ポイントを変更しました('+(Math.abs(stock-order)*100).toFixed(1)+'pips)');
                   return;
               }else{
                   notice('利得位置がおかしいです\n正しい利確位置を入力してください');
@@ -312,7 +330,6 @@ function choiceAction(state) {
 	/* スクリプトプロパティのオブジェクトを取得 */
   const CHANNEL_ACCESS_TOKEN = PropertiesService.getScriptProperties().getProperty('CHANNEL_ACCESS_TOKEN');
   const USER_ID = PropertiesService.getScriptProperties().getProperty('USER_ID');
-	/* ボタンテンプレートメッセージを送る(message) */
     if(state =='completed'){
 	    UrlFetchApp.fetch('https://api.line.me/v2/bot/message/push', {
 	    	'headers': {
@@ -398,22 +415,58 @@ function choiceAction(state) {
 			    "notificationDisabled": false // trueだとユーザーに通知されない
 		    }),
 	    });
+    }if(state =='words'){
+	    UrlFetchApp.fetch('https://api.line.me/v2/bot/message/push', {
+	    	'headers': {
+		    	'Content-Type': 'application/json',
+			    'Authorization': 'Bearer ' + CHANNEL_ACCESS_TOKEN, // スクリプトプロパティにトークンは事前に追加しておく
+		    },
+		    'method': 'POST',
+		    'payload': JSON.stringify({
+			    "to": USER_ID, // スクリプトプロパティに送信先IDは事前に追加しておく
+			    "messages": [
+				    {
+					    "type": "template",
+					    "altText": "postback",
+					    "template": {
+						    "type": "buttons",
+						    "title": "メニュー",
+						    "text": "以下より選択してください。",
+						    "actions": [
+                                {
+								    "type": "postback",
+								    "label": "エントリー理由",
+								    "data": "entry reason"
+							    },
+                                {
+								    "type": "postback",
+								    "label": "コメント",
+								    "data": "comment"
+							    }
+						    ]
+					    }
+				    }
+			    ],
+			    "notificationDisabled": false // trueだとユーザーに通知されない
+		    }),
+	    });
     }
 }
 
-function noticeGoal(){
+function noticeGoal(ver){
     var sheet = getSheets().getSheetByName('本番帳簿');
     var now = getNow();
     var past = getPast();
-    var goal = sheet.getRange(1,3).getValue();
-    if(sheet.getRange(1,3).isBlank()==false){                             //通り過ぎた場合に通知
+    var goal_r = sheet.getRange(1,1+ver*2);
+    var goal = goal_r.getValue();
+    if(goal_r.isBlank()==false){                             //通り過ぎた場合に通知
         if((goal-now)*(goal-past)<0){
             notice(goal+'を超えました');
-            sheet.getRange(1,3).clear();
+            goal_r.clear();
             return;
         }if(Math.abs(now-goal)<0.01 && Math.abs(past-goal)>=0.01){        //1pip以内にいる場合通知
             notice(goal+'まであと1pip以内');
-            sheet.getRange(1,3).clear();
+            goal_r.clear();
             return;
         }else if(Math.abs(now-goal)<0.05 && Math.abs(past-goal)>=0.05){   //5pips以内にいる場合通知
             notice(goal+'まであと5pip以内');
@@ -438,6 +491,6 @@ function takeProfit(finish){
         pips.setValue(sellpips);
         profit.setValue((sellpips*data[3]*1000).toFixed(0));
     }
-    notice(finish+'で決済しました\n収支は'+profit.getValue()+'円です');
+    notice(finish+'で決済しました\n損益は'+pips.getValue()+'pipsです');
     sheet.getRange(last_row,2).setValue('completed');  
 }
