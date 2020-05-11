@@ -68,7 +68,7 @@ function dataDivide(pair){
         bb = new BB(mysheet);
         data = addFeature(mysheet,getCandle(pair,30));
         mysheet.appendRow(data);
-        noticeRSI(pair+'_30m');//RSI通知
+        //noticeRSI(pair+'_30m');//RSI通知
         delOld(mysheet,3000);
     }
     if(now.getHours()%4==0 && now.getMinutes()==0){

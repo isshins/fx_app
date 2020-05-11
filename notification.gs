@@ -114,7 +114,7 @@ function noticeRSI(pair_time){
 
 //LINEに記録した損切、利確ポイントに触れた時に通知する
 function noticeOrder(){
-    var sheet = getSheets().getSheetByName('本番帳簿');
+    var sheet = getSheets().getSheetByName('デモ帳簿');
     var last_row = sheet.getLastRow();
     if(sheet.getRange(last_row,2).getValue() == 'trading'){
         var now_trade = getNow();
@@ -152,7 +152,7 @@ function noticeOrder(){
 
 //LINEに投稿された文字列に反応する関数
 function doPost(e) {
-  var sheet = getSheets().getSheetByName('本番帳簿');
+  var sheet = getSheets().getSheetByName('デモ帳簿');
   var last_row = sheet.getLastRow();
   var channel_access_token = PropertiesService.getScriptProperties().getProperty('CHANNEL_ACCESS_TOKEN');
   var events = JSON.parse(e.postData.contents).events;
@@ -219,22 +219,37 @@ function doPost(e) {
           if(tradetype == '買い'){
               var buypips = ((now_trade-order)*100).toFixed(1);
               if(buypips>0){
-                  notice(buypips+'pips勝っています\n+');
+                  notice(buypips+'pips勝っています');
               }if(buypips<0){
-                  notice(buypips+'pips負けています\n');
+                  notice(buypips+'pips負けています');
               }
           }if(tradetype == '売り'){
               var sellpips = ((order-now_trade)*100).toFixed(1);
               if(sellpips>0){
-                  notice(sellpips+'pips勝っています\n+');
+                  notice(sellpips+'pips勝っています');
               }if(sellpips<0){
-                  notice(sellpips+'pips負けています\n');
+                  notice(sellpips+'pips負けています');
               }
           }
           return;
       }if(post_text.indexOf('通知') != -1){
           sheet.getRange(1,3).setValue(stock);
           notice('設定完了');
+          return;
+      }
+      if(post_text.indexOf('限度') != -1){
+          var value = 200; //デモ用
+          //var value = 100; //本番用
+          var bound = sheet.getRange(3,16,12,1).getValues();
+          var ideal = sheet.getRange(3,14,12,1).getValues();
+          var diff = [];
+          var index = 0;
+          
+          for(var i=0; i<bound.length;i++){
+              diff.push(Math.abs(value - bound[i][0]));
+              index = (diff[index] < diff[i]) ? index : i;
+          }
+          notice(ideal[index][0]+'lotが適正なlot数です');
           return;
       }
   }if(events[0].type=="postback"){     ///ボタンによるpostbackに対する反応
@@ -280,7 +295,7 @@ function doPost(e) {
               if((tradetype == '買い' && order < stock) 
               || (tradetype == '売り' && order > stock)){  
                   sheet.getRange(last_row,7).setValue(stock);
-                  notice(stock+'に損切ポイントを変更しました('+(Math.abs(stock-order)*100).toFixed(1)+'pips)');
+                  notice(stock+'に利確ポイントを変更しました('+(Math.abs(stock-order)*100).toFixed(1)+'pips)');
                   return;
               }else{
                   notice('利得位置がおかしいです\n正しい利確位置を入力してください');
@@ -301,7 +316,7 @@ function doPost(e) {
 }
  //オウム返し関数
 function reply(e) {
-　var sheet = getSheets().getSheetByName('本番帳簿');
+　var sheet = getSheets().getSheetByName('デモ帳簿');
   const CHANNEL_ACCESS_TOKEN = PropertiesService.getScriptProperties().getProperty('CHANNEL_ACCESS_TOKEN');
   var message = {
     "replyToken" : e.replyToken,
@@ -454,7 +469,7 @@ function choiceAction(state) {
 }
 
 function noticeGoal(ver){
-    var sheet = getSheets().getSheetByName('本番帳簿');
+    var sheet = getSheets().getSheetByName('デモ帳簿');
     var now = getNow();
     var past = getPast();
     var goal_r = sheet.getRange(1,1+ver*2);
@@ -475,7 +490,7 @@ function noticeGoal(ver){
 }
 
 function takeProfit(finish){
-    var sheet = getSheets().getSheetByName('本番帳簿');
+    var sheet = getSheets().getSheetByName('デモ帳簿');
     var last_row = sheet.getLastRow();
     var data = (sheet.getRange(last_row, 1,1,10).getValues())[0];
     var pips = sheet.getRange(last_row,9);
@@ -491,6 +506,6 @@ function takeProfit(finish){
         pips.setValue(sellpips);
         profit.setValue((sellpips*data[3]*1000).toFixed(0));
     }
-    notice(finish+'で決済しました\n損益は'+pips.getValue()+'pipsです');
+    notice(finish+'で決済しました\n収益は'+pips.getValue()+'pipsです');
     sheet.getRange(last_row,2).setValue('completed');  
 }
