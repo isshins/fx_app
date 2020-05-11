@@ -1,8 +1,8 @@
 //通知関数まとめ
 function noticeAny(){
     noticeOrder();
-    noticeGoal(1);
-    noticeGoal(2);
+    signal(1);
+    signal(2);
 }
 
 //LINEに通知を送る関数
@@ -233,13 +233,22 @@ function doPost(e) {
           }
           return;
       }if(post_text.indexOf('通知') != -1){
-          sheet.getRange(1,3).setValue(stock);
+          var now_trade = getNow();
+          if(stock<now_trade){
+              sheet.getRange(1,3).setValue(stock);//現在価格より低いシグナル
+          }if(stock>now_trade){
+              sheet.getRange(1,5).setValue(stock);//現在価格より高いシグナル
+          }
           notice('設定完了');
           return;
       }
       if(post_text.indexOf('限度') != -1){
           var value = 200; //デモ用
-          //var value = 100; //本番用
+          if(post_text.indexOf('本番') != -1){
+              value = 100; //本番用
+          }if(post_text.indexOf('絶対') != -1){
+              value=50;  //ここ一番用
+          }
           var bound = sheet.getRange(3,16,12,1).getValues();
           var ideal = sheet.getRange(3,14,12,1).getValues();
           var diff = [];
@@ -468,7 +477,7 @@ function choiceAction(state) {
     }
 }
 
-function noticeGoal(ver){
+function signal(ver){
     var sheet = getSheets().getSheetByName('デモ帳簿');
     var now = getNow();
     var past = getPast();
