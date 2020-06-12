@@ -1,6 +1,9 @@
 //テスト関数
 function test(){
-   choiceAction('completed')
+   var sheet = getSheets().getSheetByName('デモ帳簿');
+   var last_row = sheet.getLastRow();
+   var stop_order = sheet.getRange(last_row,6).getValue().split('\n')[0];
+   Logger.log(stop_order);
 
 
 }
@@ -68,8 +71,15 @@ function dataDivide(pair){
         bb = new BB(mysheet);
         data = addFeature(mysheet,getCandle(pair,30));
         mysheet.appendRow(data);
-        //noticeRSI(pair+'_30m');//RSI通知
         delOld(mysheet,3000);
+    }
+    if(now.getMinutes()==0){
+        //1時間足のローソク足
+        mysheet = getSheets().getSheetByName(pair+'_1h');
+        bb = new BB(mysheet);
+        data = addFeature(mysheet,getCandle(pair,60));
+        mysheet.appendRow(data);
+        delOld(mysheet,2000);
     }
     if(now.getHours()%4==0 && now.getMinutes()==0){
         //４時間足
@@ -118,9 +128,11 @@ function getCandle(pair,data_num){
 function addFeature(mysheet,data){
     var bb = new BB(mysheet);
     data.push(bb.MA);
-    data.push(bb.Up);
-    data.push(bb.Down);
-    data.push(addRSI(mysheet));
+    data.push(bb.grad);
+    data.push(bb.trend);
+    //data.push(bb.Up);
+    //data.push(bb.Down);
+    //data.push(addRSI(mysheet));
     return data;
 }
 
@@ -160,73 +172,6 @@ function delOld(sheet,limit){
     }
 }
 
-/*
-//極値の更新
-function updateExtreme(){
-    var now = new Date();
-    var life_span = 6;
-    var ss  = exchange.getSheet()
-    var sheet = ss.getSheetByName('extreme_value');
-    var last_row = sheet.getLastRow();
-    var update = sheet.getRange(last_row-1,1,1,5);
-    var upd_val = update.getValues()[0];
-    var values = [0,0,0,0,0];
-    var position = getNow();//現在の買値と売値
-
-    //寿命が先に切れた時
-    if(upd_val[1]<0){
-        values = [[now,life_span,upd_val[2],position[1-upd_val[2]],0]];
-        update.setValues(values);
-    }
-    //寿命切れ
-    if(upd_val[1]==0){
-        //次なる極値を追加
-        values = [[now,life_span,upd_val[2],position[1-upd_val[2]],[0]]];
-        sheet.getRange(last_row+1,1,1,5).setValues(values);
-        //極値を確定,前の極値と比較
-        var past_extreme = sheet.getRange(last_row-4,4).getValue();
-        values = [[upd_val[0],'done',upd_val[2],upd_val[3],[upd_val[3]-past_extreme]]];
-        sheet.getRange(last_row-2,1,1,5).setValues(values);
-        update = sheet.getRange(last_row-1,1,1,5);
-        upd_val = update.getValues()[0];
-    }
-
-    for(i=0; i<2; i++){
-        //最高値の更新
-        if(upd_val[2]==1){
-            if(upd_val[3]<position[0]){
-                values=[[now,life_span,upd_val[2],position[0],[0]]]
-                update.setValues(values)
-            }else{
-                sheet.getRange(last_row-1+i,2).setValue(upd_val[2]-1);//寿命経過
-            }
-        }
-        //最安値の更新
-        if(upd_val[2]==0){
-            if(upd_val[3]>position[1]){
-                values=[[now,life_span,upd_val[2],position[1],[0]]]
-                update.setValues(values)
-            }else{
-                sheet.getRange(last_row-1+i,2).setValue(upd_val[2]-1);//寿命経過
-            }
-        }
-        update = sheet.getRange(last_row,1,1,5);
-        upd_val = update.getValues()[0];
-    }
-
-}
-*/
-
-/*
-//直近の最高値と最安値を取得
-function getEx(){
-    var sheet = exchange.getSheet().getActiveSheet();
-    var last_row = sheet.getLastRow();
-    Logger.log(sheet.getRange(last_row,3,1,2).getValues()[0]);
-    return sheet.getRange(last_row,3,1,2).getValues()[0];
-}
-
-*/
 
 //直近の買値と売値を取得
 function getNow(){
