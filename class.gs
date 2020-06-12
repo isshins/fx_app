@@ -1,5 +1,5 @@
 (function(global){
-var BB = function(sheet){
+var Indicator = function(sheet){
         var x,sum = 0,ema = 0;
         var variance = 0;
         const space = 200;
@@ -63,5 +63,5 @@ var BB = function(sheet){
         //    this.percent=0;
         //}
     }
- global.BB = BB;
+ global.Indicator = Indicator;
 })(this);

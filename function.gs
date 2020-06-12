@@ -59,24 +59,14 @@ function dataDivide(pair){
     if(now.getMinutes()%5==0){
         //5分足のローソク足
         var mysheet = getSheets().getSheetByName(pair+'_5m');
-        var bb = new BB(mysheet);
         data = addFeature(mysheet,getCandle(pair,5));
         mysheet.appendRow(data);
         noticeSharp(pair);//急変化通知
         delOld(mysheet,5000);
     }
-    if(now.getMinutes()%30==0){
-        //30分足のローソク足
-        mysheet = getSheets().getSheetByName(pair+'_30m');
-        bb = new BB(mysheet);
-        data = addFeature(mysheet,getCandle(pair,30));
-        mysheet.appendRow(data);
-        delOld(mysheet,3000);
-    }
     if(now.getMinutes()==0){
         //1時間足のローソク足
         mysheet = getSheets().getSheetByName(pair+'_1h');
-        bb = new BB(mysheet);
         data = addFeature(mysheet,getCandle(pair,60));
         mysheet.appendRow(data);
         delOld(mysheet,2000);
@@ -84,7 +74,6 @@ function dataDivide(pair){
     if(now.getHours()%4==0 && now.getMinutes()==0){
         //４時間足
         mysheet = getSheets().getSheetByName(pair+'_4h');
-        bb = new BB(mysheet);
         data = addFeature(mysheet,getCandle(pair,240));
         mysheet.appendRow(data);
         delOld(mysheet,2000);
@@ -92,7 +81,6 @@ function dataDivide(pair){
     if(now.getHours()==0 && now.getMinutes()==0){
         //日足
         mysheet = getSheets().getSheetByName(pair+'_1d');
-        bb = new BB(mysheet);
         data = addFeature(mysheet,getCandle(pair,1440));
         mysheet.appendRow(data);
         delOld(mysheet,1000);
@@ -124,12 +112,12 @@ function getCandle(pair,data_num){
     }
 }
 
-//特徴量を加える　&　ボリンジャーバンドの割合が60%を超えた時に通知する
+//特徴量を加える(200MAとその傾きとトレンド判断)
 function addFeature(mysheet,data){
-    var bb = new BB(mysheet);
-    data.push(bb.MA);
-    data.push(bb.grad);
-    data.push(bb.trend);
+    var ind = new Indicator(mysheet);
+    data.push(ind.MA);
+    data.push(ind.grad);
+    data.push(ind.trend);
     //data.push(bb.Up);
     //data.push(bb.Down);
     //data.push(addRSI(mysheet));
