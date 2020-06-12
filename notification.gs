@@ -111,48 +111,8 @@ function doPost(e) {
           if(state=='trading' || state=='completed'){           //選択肢を送信
               choiceAction(state);
               return;
-          }if(post.length>1){                                                         //損切、利得、(lot数)を三行で取得
-              var lot = 0.5;
-              var lot_text = '取引量は0.5lot\n'
-              if(post.length>2){
-                  lot_text = '取引量は'+post[2]+'lot\n'                                 //lot数の設定
-                  sheet.getRange(last_row,4).setValue(post[2]);
-                  lot = post[2];
-              }
-              
-              if((tradetype == '買い' && order > post[0])
-              || (tradetype == '売り' && order < post[0])){                            //損切ポイントの設定
-                  var stop_pip = (Math.abs(post[0]-order)*-100).toFixed(1);
-                  var stop_text = post[0]+'で損切り('+stop_pip+'pips)\n';
-                  var stop_log = post[0]+'\n('+stop_pip+'pips)'
-                  sheet.getRange(last_row,6).setValue(stop_log);
-              }else if(post[0].indexOf('なし') != -1){
-                  var stop_text = '損切はなし\n'
-                  sheet.getRange(last_row,6).setValue('なし');
-              }else{
-                  notice('損切位置がおかしいです\n正しい損切り位置を入力してください');
-                  return;
-              }
-              
-              if((tradetype == '買い' && order < post[1]) 
-              || (tradetype == '売り' && order > post[1])){                             //利得ポイントの設定
-                  var limit_pip=(Math.abs(post[1]-order)*100).toFixed(1);
-                  var limit_text = post[1]+'で利確('+limit_pip+'pips)\n'
-                  var limit_log = post[1]+'\n('+limit_pip+'pips)'
-                  sheet.getRange(last_row,7).setValue(limit_log);
-              }else if(post[1].indexOf('なし') != -1){
-                  var limit_text = '利確はなし\n'
-                  sheet.getRange(last_row,7).setValue('なし');
-              }else{
-                  notice('利得位置がおかしいです\n正しい利確位置を入力してください');
-                  return;
-              }
-              
-              var send = stop_text+limit_text+lot_text+'で記録しました';
-              notice(send);
-              sheet.getRange(last_row,2).setValue('trading'); 
-            }
-            return;
+          }
+          writeDetail(post);                                    //損切、利得、(lot数)を三行で取得
       }if(post_text.indexOf('通知') != -1){
           setSignal(stock);
           return;
@@ -198,10 +158,10 @@ function doPost(e) {
               var order = sheet.getRange(last_row,5).getValue();
               var lot = sheet.getRange(last_row,4).getValue();
               var stop_pip = (Math.abs(stock-order)*-100).toFixed(1);
-              var stop_log = stock+'\n('+stop_pip+'pips)'
+              var pip_log = stock+'\n('+stop_pip+'pips)'
               if((tradetype == '買い' && order > stock)
               || (tradetype == '売り' && order < stock)){
-                  sheet.getRange(last_row,6).setValue(stop_log);
+                  sheet.getRange(last_row,6).setValue(pip_log);
                   notice(stock+'に損切ポイントを変更しました('+stop_pip+'pips)');
                   return;
               }else{
@@ -212,10 +172,10 @@ function doPost(e) {
               var order = sheet.getRange(last_row,5).getValue();
               var lot = sheet.getRange(last_row,4).getValue();
               var limit_pip = (Math.abs(stock-order)*100).toFixed(1);
-              var limit_log = stock+'\n('+limit_pip+'pips)'
+              var pip_log = stock+'\n('+limit_pip+'pips)'
               if((tradetype == '買い' && order < stock) 
               || (tradetype == '売り' && order > stock)){  
-                  sheet.getRange(last_row,7).setValue(limit_log);
+                  sheet.getRange(last_row,7).setValue(pip_log);
                   notice(stock+'に利確ポイントを変更しました('+limit_pip+'pips)');
                   return;
               }else{
@@ -502,4 +462,54 @@ function tellPip(){
             notice(sellpips+'pips負けています');
         }
     }
+}
+
+function writeDetail(post){
+    var sheet = getSheets().getSheetByName('デモ帳簿');
+    var last_row = sheet.getLastRow();
+    var tradetype = sheet.getRange(last_row,3).getValue();
+    var order = sheet.getRange(last_row,5).getValue();
+
+    if(post.length>1){                                                         //損切、利得、(lot数)を三行で取得
+        var lot = 0.5;
+        var lot_text = '取引量は0.5lot\n'
+        if(post.length>2){
+            lot_text = '取引量は'+post[2]+'lot\n'                                 //lot数の設定
+            sheet.getRange(last_row,4).setValue(post[2]);
+            lot = post[2];
+        }
+              
+        if((tradetype == '買い' && order > post[0])
+        || (tradetype == '売り' && order < post[0])){                            //損切ポイントの設定
+            var stop_pip = (Math.abs(post[0]-order)*-100).toFixed(1);
+            var stop_text = post[0]+'で損切り('+stop_pip+'pips)\n';
+            var pip_log = post[0]+'\n('+stop_pip+'pips)'
+            sheet.getRange(last_row,6).setValue(pip_log);
+        }else if(post[0].indexOf('なし') != -1){
+            var stop_text = '損切はなし\n'
+            sheet.getRange(last_row,6).setValue('なし');
+        }else{
+            notice('損切位置がおかしいです\n正しい損切り位置を入力してください');
+            return;
+        } 
+        
+        if((tradetype == '買い' && order < post[1]) 
+        || (tradetype == '売り' && order > post[1])){                             //利得ポイントの設定
+            var limit_pip=(Math.abs(post[1]-order)*100).toFixed(1);
+            var limit_text = post[1]+'で利確('+limit_pip+'pips)\n'
+            var pip_log = post[1]+'\n('+limit_pip+'pips)'
+            sheet.getRange(last_row,7).setValue(pip_log);
+        }else if(post[1].indexOf('なし') != -1){
+            var limit_text = '利確はなし\n'
+            sheet.getRange(last_row,7).setValue('なし');
+        }else{
+            notice('利得位置がおかしいです\n正しい利確位置を入力してください');
+            return;
+        }
+              
+        var send = stop_text+limit_text+lot_text+'で記録しました';
+        notice(send);
+        sheet.getRange(last_row,2).setValue('trading'); 
+    }
+    return;
 }
