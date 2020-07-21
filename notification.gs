@@ -392,26 +392,27 @@ function noticeOrder(){
         var limit_order = sheet.getRange(last_row,7).getValue().split('\n')[0];
         var finish = sheet.getRange(last_row,8);
         var tradetype = sheet.getRange(last_row,3).getValue();
+        var spread = 0.35;
         if(tradetype == '買い'){
             if(stop_order!='なし'){
-                if(stop_order>=now_trade){
+                if(stop_order-spread>=now_trade){
                     notice('損切ポイントを超えました');
                     takeProfit(stop_order);
                 }
             }if(limit_order!='なし'){
-                if(limit_order<=now_trade){
+                if(limit_order+spread<=now_trade){
                     notice('利確ポイントに到達しました');
                     takeProfit(limit_order);
                 }
             }
          }if(tradetype == '売り'){
             if(stop_order!='なし'){
-                if(stop_order<=now_trade){
+                if(stop_order+spread<=now_trade){
                     notice('損切ポイントを超えました');
                     takeProfit(stop_order);
                 }
             }if(limit_order!='なし'){
-                if(limit_order>=now_trade){
+                if(limit_order-spread>=now_trade){
                     notice('利確ポイントに到達しました');
                     takeProfit(limit_order);
                 }

@@ -135,3 +135,31 @@ function noticeRSI(pair_time){
     }
 }
 */
+
+/*
+function addRSI(sheet){
+    const period = 13;
+    var last_row = sheet.getLastRow();
+    var diff = 0;
+    var plus_diff = 0;
+    //13日分のデータが貯まるまで返値を0にする
+    if(last_row>period+1){
+        var period_row = sheet.getRange(last_row-period, 5, period+1, 1).getValues()
+     }else{
+        var period_row = [];
+        for(i=0;i<period+1;i++){
+            period_row.push([0]);
+        } 
+    }
+    
+    for(i=0;i<period;i++){
+        diff += Math.abs(period_row[i+1][0]-period_row[i][0]);
+        if(period_row[i+1][0]-period_row[i][0]>0){
+            plus_diff += period_row[i+1][0]-period_row[i][0];
+        }
+    }
+    diff /= period;
+    plus_diff /= period;
+    return plus_diff/diff*100;
+}
+*/
