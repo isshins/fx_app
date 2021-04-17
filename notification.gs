@@ -370,15 +370,15 @@ var USER_ID = PropertiesService.getScriptProperties().getProperty('USER_ID');
 
 
 //五分足で急激な変化(20pips)が生じた際に通知
-function noticeSharp(pair){
-    var mysheet = getSheets().getSheetByName(pair+'_5m');
+function noticeSharp(){
+    var mysheet = getSheets().getSheetByName('GBP_5m');
     var last_row = mysheet.getLastRow(); 
     var open = mysheet.getRange(last_row, 4).getValue();
     var end = mysheet.getRange(last_row, 5).getValue();
     if(open-end>=0.2){
-        notice(pair+'が急下落');
+        notice('GBPが急下落');
     }if(end-open>=0.2){
-        notice(pair+'が急上昇');
+        notice('GBPが急上昇');
     }
 }
 
@@ -387,12 +387,12 @@ function noticeOrder(){
     var sheet = getSheets().getSheetByName('デモ帳簿');
     var last_row = sheet.getLastRow();
     if(sheet.getRange(last_row,2).getValue() == 'trading'){
-        var now_trade = getNow();
+        var now_trade = getNow(0);
         var stop_order = sheet.getRange(last_row,6).getValue().split('\n')[0];
         var limit_order = sheet.getRange(last_row,7).getValue().split('\n')[0];
         var finish = sheet.getRange(last_row,8);
         var tradetype = sheet.getRange(last_row,3).getValue();
-        var spread = 0.35;
+        var spread = 0.4;
         if(tradetype == '買い'){
             if(stop_order!='なし'){
                 if(stop_order-spread>=now_trade){
@@ -424,7 +424,7 @@ function noticeOrder(){
 //通知したい値を指定する関数
 function setSignal(stock){
     var sheet = getSheets().getSheetByName('デモ帳簿');
-    var now_trade = getNow();
+    var now_trade = getNow(0);
     if(stock<now_trade){
         sheet.getRange(1,3).setValue(stock);
         notice('下限設定完了');
@@ -437,7 +437,7 @@ function setSignal(stock){
 //指定した値に近づいた時、超えた時に通知する関数
 function tellSignal(ver){
     var sheet = getSheets().getSheetByName('デモ帳簿');
-    var now = getNow();
+    var now = getNow(0);
     var past = getPast();
     var goal_r = sheet.getRange(1,1+ver*2);
     var goal = goal_r.getValue();
@@ -491,14 +491,14 @@ function tellPip(){
     var order = sheet.getRange(last_row,5).getValue();
 
     if(tradetype == '買い'){
-        var buypips = ((getNow()-order)*100).toFixed(1);
+        var buypips = ((getNow(0)-order)*100).toFixed(1);
         if(buypips>0){
             notice(buypips+'pips勝っています');
         }if(buypips<0){
             notice(buypips+'pips負けています');
         }
     }if(tradetype == '売り'){
-        var sellpips = ((order-getNow())*100).toFixed(1);
+        var sellpips = ((order-getNow(0))*100).toFixed(1);
         if(sellpips>0){
             notice(sellpips+'pips勝っています');
         }if(sellpips<0){
