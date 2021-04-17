@@ -7,7 +7,6 @@ function test(){
    delOld(sheet,2000)
 }
 
-
 //アップロード関数
 function update(mySheet){
     var prices = [new Date()];
