@@ -1,41 +1,73 @@
 //テスト関数
 function test(){
-   var sheet = getSheets().getSheetByName('デモ帳簿');
+   var sheet = getSheets().getSheetByName('test');
    var last_row = sheet.getLastRow();
    var stop_order = sheet.getRange(last_row,6).getValue().split('\n')[0];
-   Logger.log(stop_order);
-
-
+   testupdate(sheet)
+   delOld(sheet,2000)
 }
+
 
 //アップロード関数
 function update(mySheet){
-    var pairs = ["GBPJPY", "USDJPY", "EURJPY"];
     var prices = [new Date()];
     var last_row = mySheet.getLastRow();
-    var miss = 0;
-    var data = ''
-    for(var i=0; i<3; i++){
-        data = getData(pairs[i]);
+    var miss = -1;
+    var data = '';
+    for(var i=0; i<2; i++){
+        data = getData('GBPJPY',i);
         if(data=='.'){
-            prices.push(mySheet.getRange(last_row,i+2).getValue());
-            miss = 1;
+            //ptices.push(mySheet.getRange(last_row,i+2).getValue())
+            prices.push(getData('GBPJPY',i));
+            miss = i;
         }else{
             prices.push(data);
         }
     }
-    if(miss==1){
-    prices.push('miss');
+    prices.push(prices[2]-prices[1])
+    if(miss>=0){
+        prices.push('miss');
+        prices.push(getData('GBPJPY',miss));
+    }
+    mySheet.appendRow(prices);
+}
+
+//修正版アップデート関数
+function testupdate(mySheet){
+    var prices = [new Date()];
+    var last_row = mySheet.getLastRow();
+    var miss = -1;
+    var data = '';
+    for(var i=0; i<2; i++){
+        data = getData('GBPJPY',i);
+        if(data=='.'){
+            prices.push(getData('GBPJPY',i));
+            miss = i;
+        }else{
+            prices.push(data);
+        }
+    }
+    prices.push(prices[2]-prices[1])
+    if(miss>=0){
+        prices.push('miss');
+        prices.push(getData('GBPJPY',i));
     }
     mySheet.appendRow(prices);
 }
 
 //為替データを取得する関数
-function getData(pair) {
+function getData(pair,ver) {
     var url = 'https://info.finance.yahoo.co.jp/fx/detail/?code=' +pair+ '=FX';
-    var tag = pair + '_detail_bid">';
+    switch(ver){
+        case 0:
+            var tag = pair + '_detail_bid">';
+            break;
+        case 1:
+            var tag = pair + '_detail_ask">';
+            break;
+    }
 
-    var response = UrlFetchApp.fetch(url);  
+    var response = UrlFetchApp.fetch(url); 
     var html = response.getContentText();
     var index = html.indexOf(tag);
     price = "";
@@ -53,56 +85,54 @@ function getData(pair) {
 
 
 //1分足の元データからそれぞれの時間足のシート作成
-function dataDivide(pair){
+function dataDivide(){
     var now = new Date();
     var data = [];
     if(now.getMinutes()%5==0){
         //5分足のローソク足
-        var mysheet = getSheets().getSheetByName(pair+'_5m');
-        data = addFeature(mysheet,getCandle(pair,5));
+        var mysheet = getSheets().getSheetByName('GBP_5m');
+        data = addFeature(mysheet,getCandle(5));
         mysheet.appendRow(data);
-        noticeSharp(pair);//急変化通知
-        delOld(mysheet,5000);
+        noticeSharp();//急変化通知
+        delOld(mysheet,10000);
     }
     if(now.getMinutes()%30==0){
         //30分足のローソク足
-        mysheet = getSheets().getSheetByName(pair+'_30m');
-        data = addFeature(mysheet,getCandle(pair,30));
+        mysheet = getSheets().getSheetByName('GBP_30m');
+        data = addFeature(mysheet,getCandle(30));
         mysheet.appendRow(data);
-        delOld(mysheet,3000);
+        delOld(mysheet,10000);
     }
     if(now.getMinutes()==0){
         //1時間足のローソク足
-        mysheet = getSheets().getSheetByName(pair+'_1h');
-        data = addFeature(mysheet,getCandle(pair,60));
+        mysheet = getSheets().getSheetByName('GBP_1h');
+        data = addFeature(mysheet,getCandle(60));
         mysheet.appendRow(data);
-        delOld(mysheet,2000);
+        delOld(mysheet,10000);
     }
     if(now.getHours()%4==0 && now.getMinutes()==0){
         //４時間足
-        mysheet = getSheets().getSheetByName(pair+'_4h');
-        data = addFeature(mysheet,getCandle(pair,240));
+        mysheet = getSheets().getSheetByName('GBP_4h');
+        data = addFeature(mysheet,getCandle(240));
         mysheet.appendRow(data);
-        delOld(mysheet,2000);
+        delOld(mysheet,10000);
     }
     if(now.getHours()==0 && now.getMinutes()==0){
         //日足
-        mysheet = getSheets().getSheetByName(pair+'_1d');
-        data = addFeature(mysheet,getCandle(pair,1440));
+        mysheet = getSheets().getSheetByName('GBP_1d');
+        data = addFeature(mysheet,getCandle(1440));
         mysheet.appendRow(data);
-        delOld(mysheet,1000);
+        delOld(mysheet,10000);
     }
 }
 
 //与えられた期間での時間,open,end,high,lowを取得
-function getCandle(pair,data_num){
-    var pairs = ["GBP","USD","EUR"];
+function getCandle(data_num){
     var mysheet = getSheets().getSheetByName('data_1m');
     var array = [];
     var now = new Date();
     var last_row = mysheet.getLastRow();
-    var pair_n = pairs.indexOf(pair);
-    var data = mysheet.getRange(last_row-data_num, pair_n+2,data_num+1,1).getValues();
+    var data = mysheet.getRange(last_row-data_num,2,data_num+1,1).getValues();
     for(i=1; i<data_num+1; i++){
         if(data[i][0] == '.'){
         array.push(data[i-1][0]);
@@ -139,26 +169,28 @@ function delOld(sheet,limit){
 }
 
 
-//直近の買値と売値を取得
-function getNow(){
+//現在の買値と売値を取得
+function getNow(ver){
     var sheet = getSheets().getSheetByName('data_1m');
     var last_row = sheet.getLastRow();
-    var now_trade = sheet.getRange(last_row,2).getValue();
+    var now_trade = sheet.getRange(last_row,2+ver).getValue();//０はBid(売値),1はAsk(買値),２はスプレッド
+
     if(now_trade == '0' || now_trade == '.'){
-        getNow();
         Logger.log('getNow() is missing');
+        now_trade = sheet.getRange(last_row-1,2).getValue();
     }
     return now_trade;
 }
 
-//直近の買値と売値を取得
-function getPast(){
+//直前の買値と売値を取得
+function getPast(ver){
     var sheet = getSheets().getSheetByName('data_1m');
     var last_row = sheet.getLastRow();
-    var past_trade = sheet.getRange(last_row-1,2).getValue();
+    var now_trade = sheet.getRange(last_row-1,2+ver).getValue();//０はBid(売値),1はAsk(買値),２はスプレッド
+    
     if(past_trade == '0' || past_trade == '.'){
-        getPast();
         Logger.log('getPast() is missing');
+        past_trade = sheet.getRange(last_row-2,2).getValue();
     }
     return past_trade;
 }
