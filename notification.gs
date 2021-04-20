@@ -385,6 +385,7 @@ function noticeSharp(){
 //LINEに記録した損切、利確ポイントに触れた時に通知する
 function noticeOrder(){
     var sheet = getSheets().getSheetByName('デモ帳簿');
+    
     var last_row = sheet.getLastRow();
     if(sheet.getRange(last_row,2).getValue() == 'trading'){
         var now_trade = getNow(0);
@@ -438,7 +439,7 @@ function setSignal(stock){
 function tellSignal(ver){
     var sheet = getSheets().getSheetByName('デモ帳簿');
     var now = getNow(0);
-    var past = getPast();
+    var past = getPast(0);
     var goal_r = sheet.getRange(1,1+ver*2);
     var goal = goal_r.getValue();
     if(goal_r.isBlank()==false){                             //通り過ぎた場合に通知
