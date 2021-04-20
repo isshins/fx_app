@@ -7,7 +7,6 @@ function test(){
    delOld(sheet,2000)
 }
 
-
 //アップロード関数
 function update(mySheet){
     var prices = [new Date()];
@@ -186,7 +185,7 @@ function getNow(ver){
 function getPast(ver){
     var sheet = getSheets().getSheetByName('data_1m');
     var last_row = sheet.getLastRow();
-    var now_trade = sheet.getRange(last_row-1,2+ver).getValue();//０はBid(売値),1はAsk(買値),２はスプレッド
+    var past_trade = sheet.getRange(last_row-1,2+ver).getValue();//０はBid(売値),1はAsk(買値),２はスプレッド
     
     if(past_trade == '0' || past_trade == '.'){
         Logger.log('getPast() is missing');
