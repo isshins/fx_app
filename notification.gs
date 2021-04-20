@@ -438,8 +438,8 @@ function setSignal(stock){
 //指定した値に近づいた時、超えた時に通知する関数
 function tellSignal(ver){
     var sheet = getSheets().getSheetByName('デモ帳簿');
-    var now = getNow(0);
-    var past = getPast(0);
+    var now = getNow(1);
+    var past = getPast(1);
     var goal_r = sheet.getRange(1,1+ver*2);
     var goal = goal_r.getValue();
     if(goal_r.isBlank()==false){                             //通り過ぎた場合に通知
